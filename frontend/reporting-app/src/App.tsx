@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Provider } from 'react-redux';
+import { store, useAppDispatch } from './store/store';
+import { fetchUsers } from './store/slices/authSlice';
+import { fetchReports, fetchProjects, fetchActivities } from './store/slices/reportsSlice';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ReportProvider } from './context/ReportContext';
 import { Navbar } from './components/common/Navbar';
@@ -18,6 +22,7 @@ import { UserManagementPage } from './pages/UserManagementPage';
 import { Sparkles } from 'lucide-react';
 
 const AppContent: React.FC = () => {
+  const dispatch = useAppDispatch();
   const { currentUser } = useAuth();
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
@@ -29,6 +34,14 @@ const AppContent: React.FC = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  // Synchronize backend data from FastAPI endpoints
+  useEffect(() => {
+    dispatch(fetchUsers());
+    dispatch(fetchReports());
+    dispatch(fetchProjects());
+    dispatch(fetchActivities());
+  }, [dispatch]);
 
   // Derived effective tab prevents non-managers from seeing manager tabs
   const effectiveTab: NavigationTab =
@@ -153,11 +166,13 @@ const AppContent: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ReportProvider>
-        <AppContent />
-      </ReportProvider>
-    </AuthProvider>
+    <Provider store={store}>
+      <AuthProvider>
+        <ReportProvider>
+          <AppContent />
+        </ReportProvider>
+      </AuthProvider>
+    </Provider>
   );
 };
 

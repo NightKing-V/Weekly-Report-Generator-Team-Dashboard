@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { Modal } from '../common/Modal';
 import { useReports } from '../../context/ReportContext';
+import { Modal } from '../common/Modal';
+import { apiClient } from '../../services/api';
 import { Sparkles, Send, Bot, User as UserIcon, RefreshCw } from 'lucide-react';
-
-interface AiAssistantModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
 
 interface ChatMessage {
   id: string;
@@ -15,14 +11,19 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface AiAssistantModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
 export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onClose }) => {
-  const { reports, selectedWeek, projects } = useReports();
+  const { selectedWeek } = useReports();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: 'msg-1',
+      id: 'welcome-msg',
       sender: 'assistant',
-      text: `👋 Hello! I am your **WeeklyPulse AI Assistant**. I can analyze team submissions, summarize completed deliverables, highlight recurring blockers, and answer questions across all reports for **${selectedWeek}**.\n\nTry clicking one of the suggested prompts below or ask any question!`,
+      text: `Hello! I'm your AI Team Assistant connected to the backend reporting API. Ask me to generate an executive summary for **${selectedWeek}**, identify unresolved blockers, or check progress across team members.`,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -33,97 +34,11 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
   const suggestedPrompts = [
     'Generate executive summary for this week',
     'What are the key blockers and risks across the team?',
-    'What did the frontend and design team deliver?',
+    'What did the frontend team deliver?',
     'Summarize team workload and hours distribution',
   ];
 
-  const generateAiResponse = (query: string): string => {
-    const q = query.toLowerCase();
-    const weekReports = reports.filter((r) => r.weekLabel === selectedWeek);
-
-    if (q.includes('summary') || q.includes('executive')) {
-      const completedTasks = weekReports.flatMap((r) => r.tasksCompleted || []);
-      const totalDevHours = weekReports.reduce((s, r) => s + (r.hoursWorked?.development || 0), 0);
-      const totalTestingHours = weekReports.reduce((s, r) => s + (r.hoursWorked?.testing || 0), 0);
-      const blockersCount = weekReports.reduce((s, r) => s + (r.blockers?.length || 0), 0);
-
-      return `### 📊 Executive Team Summary — ${selectedWeek}
-
-**Key Highlights:**
-- **Reports Submitted:** ${weekReports.length} team members active this cycle.
-- **Tasks Delivered:** ${completedTasks.filter((t) => t.status === 'Completed').length} completed deliverables across ${projects.length} key projects.
-- **Engineering Effort:** Logged **${totalDevHours} hours** of development and **${totalTestingHours} hours** of QA & testing.
-
-**Major Deliverables:**
-- **Sarah Chen:** Merged Executive Summary Widget (PR #142) and achieved 0 Axe-core accessibility violations.
-- **Priya Patel:** Vector embeddings & MongoDB Atlas Search integration prototype stood up in under 3 days.
-- **Michael Scott:** MongoDB replica set automated healthcheck configured; JWT Ed25519 token migration in progress.
-
-**Current Attention Points:**
-- **${blockersCount} open blockers** identified. Key issue flagged: Staging API latency spikes affecting demo runs.`;
-    }
-
-    if (q.includes('blocker') || q.includes('risk')) {
-      const allBlockers = weekReports.flatMap((r) =>
-        (r.blockers || []).map((b) => ({ ...b, member: r.userName, project: r.projectName }))
-      );
-
-      if (allBlockers.length === 0) {
-        return `✅ **Good news!** No blockers or critical impediments are currently reported for **${selectedWeek}**.`;
-      }
-
-      const keyBlockers = allBlockers.filter((b) => b.isKeyIssue);
-      const normalBlockers = allBlockers.filter((b) => !b.isKeyIssue);
-
-      let response = `### 🚨 Team Blockers & Risk Analysis — ${selectedWeek}\n\n`;
-      if (keyBlockers.length > 0) {
-        response += `**Critical Key Issues Flagged:**\n`;
-        keyBlockers.forEach((b) => {
-          response += `- **${b.member} (${b.project}):** ${b.description} ${b.impact ? `*(Impact: ${b.impact})*` : ''}\n`;
-        });
-      }
-      if (normalBlockers.length > 0) {
-        response += `\n**Other Active Impediments:**\n`;
-        normalBlockers.forEach((b) => {
-          response += `- **${b.member}:** ${b.description}\n`;
-        });
-      }
-      return response;
-    }
-
-    if (q.includes('frontend') || q.includes('design') || q.includes('sarah')) {
-      const sarahReport = weekReports.find((r) => r.userName.includes('Sarah'));
-      if (sarahReport) {
-        return `### 🎨 Frontend & Design Update (${sarahReport.weekLabel})\n\n**Sarah Chen** worked on **${sarahReport.projectName}**:\n- **Executive Summary Widget:** 100% completed (PR #142 merged with 100% test coverage).\n- **Responsive Table Filtering:** In progress (90% completed).\n- **Performance Win:** Reduced initial bundle size by 38% via dynamic route chunking!\n- **Next Week:** Finalize CSV/PDF exports and polish mobile navigation drawers.`;
-      }
-    }
-
-    if (q.includes('hours') || q.includes('workload')) {
-      const totalHours = weekReports.reduce(
-        (acc, r) => ({
-          dev: acc.dev + (r.hoursWorked?.development || 0),
-          test: acc.test + (r.hoursWorked?.testing || 0),
-          meetings: acc.meetings + (r.hoursWorked?.meetings || 0),
-          docs: acc.docs + (r.hoursWorked?.documentation || 0),
-        }),
-        { dev: 0, test: 0, meetings: 0, docs: 0 }
-      );
-
-      return `### ⏱️ Team Hours & Allocation Breakdown — ${selectedWeek}\n\n- **Development:** ${totalHours.dev} hrs\n- **QA & Testing:** ${totalHours.test} hrs\n- **Meetings & Syncs:** ${totalHours.meetings} hrs\n- **Documentation:** ${totalHours.docs} hrs\n\n**Total Team Effort:** **${
-        totalHours.dev + totalHours.test + totalHours.meetings + totalHours.docs
-      } hours**. Development comprises the majority (${Math.round(
-        (totalHours.dev /
-          (totalHours.dev + totalHours.test + totalHours.meetings + totalHours.docs || 1)) *
-          100
-      )}%) of productive time.`;
-    }
-
-    return `Based on reports for **${selectedWeek}**, the team has submitted **${weekReports.length} reports**. ${
-      weekReports.filter((r) => r.status === 'Approved').length
-    } are approved, and ${weekReports.filter((r) => r.status === 'Needs Correction').length} require revisions. Let me know if you would like an executive summary, list of blockers, or specific contributor progress!`;
-  };
-
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const text = textToSend || inputQuery;
     if (!text.trim()) return;
 
@@ -138,17 +53,26 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
     setInputQuery('');
     setIsThinking(true);
 
-    setTimeout(() => {
-      const reply = generateAiResponse(text);
+    try {
+      const response = await apiClient.chat.ask(text.trim(), selectedWeek);
       const botMessage: ChatMessage = {
         id: `msg-${crypto.randomUUID()}`,
         sender: 'assistant',
-        text: reply,
+        text: response.reply,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, botMessage]);
+    } catch {
+      const errorMessage: ChatMessage = {
+        id: `msg-${crypto.randomUUID()}`,
+        sender: 'assistant',
+        text: 'Unable to reach the backend AI assistant service. Please verify that the API server is running.',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsThinking(false);
-    }, 600);
+    }
   };
 
   return (
@@ -156,7 +80,7 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
       isOpen={isOpen}
       onClose={onClose}
       title="AI Team Intelligence Assistant"
-      subtitle={`Synthesizing data from ${reports.length} reports across ${selectedWeek}`}
+      subtitle={`Connected to API • Analyzing reports for ${selectedWeek}`}
       maxWidth="3xl"
     >
       <div className="flex flex-col h-[520px]">
@@ -167,7 +91,7 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
               key={p}
               type="button"
               onClick={() => handleSend(p)}
-              className="text-[11px] font-medium text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-full transition-colors flex items-center gap-1"
+              className="text-[11px] font-medium text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer"
             >
               <Sparkles className="h-3 w-3 text-indigo-600" />
               <span>{p}</span>
@@ -212,7 +136,7 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
                 <RefreshCw className="h-4 w-4 animate-spin" />
               </div>
               <div className="p-3 bg-slate-100 rounded-2xl text-xs text-slate-500 italic">
-                Synthesizing reports and computing insights...
+                Querying backend intelligence and analyzing reports...
               </div>
             </div>
           )}
@@ -236,7 +160,7 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
           <button
             type="submit"
             disabled={!inputQuery.trim() || isThinking}
-            className="p-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-xs"
+            className="p-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer"
           >
             <Send className="h-4 w-4" />
           </button>
