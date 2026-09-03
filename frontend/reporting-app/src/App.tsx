@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Provider } from 'react-redux';
-import { store, useAppDispatch } from './store/store';
-import { fetchUsers } from './store/slices/authSlice';
-import { fetchReports, fetchProjects, fetchActivities } from './store/slices/reportsSlice';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ReportProvider } from './context/ReportContext';
+import { useAuthStore, useReportStore } from './store';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar } from './components/common/Sidebar';
 import { SnackbarContainer } from './components/common/SnackbarContainer';
@@ -25,8 +20,7 @@ import { UserManagementPage } from './pages/UserManagementPage';
 import { Sparkles } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const { currentUser } = useAuth();
+  const currentUser = useAuthStore((state) => state.currentUser);
   const { execute } = useFetch();
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
@@ -39,15 +33,15 @@ const AppContent: React.FC = () => {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
-  // Synchronize backend data from FastAPI endpoints using useFetch
+  // Synchronize backend data from FastAPI endpoints using Zustand actions
   useEffect(() => {
     execute(
       async () => {
         await Promise.all([
-          dispatch(fetchUsers()).unwrap(),
-          dispatch(fetchReports()).unwrap(),
-          dispatch(fetchProjects()).unwrap(),
-          dispatch(fetchActivities()).unwrap(),
+          useAuthStore.getState().fetchUsers(),
+          useReportStore.getState().fetchReports(),
+          useReportStore.getState().fetchProjects(),
+          useReportStore.getState().fetchActivities(),
         ]);
       },
       {
@@ -55,7 +49,7 @@ const AppContent: React.FC = () => {
         defaultErrorMessage: 'Could not connect to backend server at localhost:8000.',
       }
     );
-  }, [dispatch, execute]);
+  }, [execute]);
 
   // Derived effective tab prevents non-managers from seeing manager tabs
   const effectiveTab: NavigationTab =
@@ -187,15 +181,7 @@ const AppContent: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  return (
-    <Provider store={store}>
-      <AuthProvider>
-        <ReportProvider>
-          <AppContent />
-        </ReportProvider>
-      </AuthProvider>
-    </Provider>
-  );
+  return <AppContent />;
 };
 
 export default App;

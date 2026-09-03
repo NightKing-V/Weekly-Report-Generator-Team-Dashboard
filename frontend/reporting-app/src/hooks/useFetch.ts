@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useAppDispatch } from '../store/store';
-import { showSnackbar } from '../store/slices/notificationSlice';
+import { useNotificationStore } from '../store/useNotificationStore';
 import { ApiError } from '../services/api';
 
 export interface UseFetchOptions {
@@ -17,7 +16,7 @@ export interface UseFetchResult<T> {
 }
 
 export function useFetch() {
-  const dispatch = useAppDispatch();
+  const showSnackbar = useNotificationStore((state) => state.showSnackbar);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [statusCode, setStatusCode] = useState<number | null>(null);
@@ -36,13 +35,11 @@ export function useFetch() {
         setStatusCode(200);
 
         if (options?.showSuccessSnackbar && options?.successMessage) {
-          dispatch(
-            showSnackbar({
-              type: 'success',
-              message: options.successMessage,
-              statusCode: 200,
-            })
-          );
+          showSnackbar({
+            type: 'success',
+            message: options.successMessage,
+            statusCode: 200,
+          });
         }
 
         setLoading(false);
@@ -80,21 +77,18 @@ export function useFetch() {
         setLoading(false);
 
         if (options?.showErrorSnackbar !== false) {
-          dispatch(
-            showSnackbar({
-              type: 'error',
-              message: userMessage,
-              statusCode: code,
-            })
-          );
+          showSnackbar({
+            type: 'error',
+            message: userMessage,
+            statusCode: code,
+          });
         }
 
         return { data: null, error: resolvedError, statusCode: code };
       }
     },
-    [dispatch]
+    [showSnackbar]
   );
 
   return { execute, loading, error, statusCode };
 }
-

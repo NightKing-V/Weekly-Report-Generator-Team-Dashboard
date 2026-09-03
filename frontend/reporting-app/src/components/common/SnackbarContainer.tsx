@@ -1,19 +1,18 @@
 import React, { useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store/store';
-import { hideSnackbar, type SnackbarNotification } from '../../store/slices/notificationSlice';
+import { useNotificationStore, type SnackbarNotification } from '../../store/useNotificationStore';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 const SnackbarItem: React.FC<{ notification: SnackbarNotification }> = ({ notification }) => {
-  const dispatch = useAppDispatch();
+  const hideSnackbar = useNotificationStore((state) => state.hideSnackbar);
 
   useEffect(() => {
     if (notification.duration && notification.duration > 0) {
       const timer = setTimeout(() => {
-        dispatch(hideSnackbar(notification.id));
+        hideSnackbar(notification.id);
       }, notification.duration);
       return () => clearTimeout(timer);
     }
-  }, [notification, dispatch]);
+  }, [notification, hideSnackbar]);
 
   const getStyle = () => {
     switch (notification.type) {
@@ -66,7 +65,7 @@ const SnackbarItem: React.FC<{ notification: SnackbarNotification }> = ({ notifi
       </div>
       <button
         type="button"
-        onClick={() => dispatch(hideSnackbar(notification.id))}
+        onClick={() => hideSnackbar(notification.id)}
         className="text-white/60 hover:text-white p-1 rounded-lg transition-colors cursor-pointer shrink-0"
         title="Dismiss"
       >
@@ -77,7 +76,7 @@ const SnackbarItem: React.FC<{ notification: SnackbarNotification }> = ({ notifi
 };
 
 export const SnackbarContainer: React.FC = () => {
-  const notifications = useAppSelector((state) => state.notification.notifications);
+  const notifications = useNotificationStore((state) => state.notifications);
 
   if (notifications.length === 0) return null;
 
@@ -89,4 +88,3 @@ export const SnackbarContainer: React.FC = () => {
     </div>
   );
 };
-
