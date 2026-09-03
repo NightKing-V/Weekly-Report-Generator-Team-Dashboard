@@ -1,122 +1,164 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ReportProvider } from './context/ReportContext';
+import { Navbar } from './components/common/Navbar';
+import { Sidebar, type NavigationTab } from './components/common/Sidebar';
+import { AiAssistantModal } from './components/ai/AiAssistantModal';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Pages
+import { LoginPage } from './pages/LoginPage';
+import { PersonalReportPage } from './pages/PersonalReportPage';
+import { ReportHistoryPage } from './pages/ReportHistoryPage';
+import { ReportDetailPage } from './pages/ReportDetailPage';
+import { TeamDashboardPage } from './pages/TeamDashboardPage';
+import { ManagerReviewPage } from './pages/ManagerReviewPage';
+import { TeamMemberProfilePage } from './pages/TeamMemberProfilePage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { UserManagementPage } from './pages/UserManagementPage';
+import { Sparkles } from 'lucide-react';
+
+const AppContent: React.FC = () => {
+  const { currentUser } = useAuth();
+
+  const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
+
+  const [currentTab, setCurrentTab] = useState<NavigationTab>(() => {
+    return isManager ? 'team-dashboard' : 'personal-report';
+  });
+
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  // Derived effective tab prevents non-managers from seeing manager tabs
+  const effectiveTab: NavigationTab =
+    !isManager && (currentTab === 'team-dashboard' || currentTab === 'manager-review' || currentTab === 'users')
+      ? 'personal-report'
+      : currentTab;
+
+  if (!currentUser) {
+    return <LoginPage />;
+  }
+
+  const navigateToTab = (tab: NavigationTab) => {
+    setCurrentTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenReportDetail = (reportId: string) => {
+    setSelectedReportId(reportId);
+    setCurrentTab('report-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenMemberProfile = (memberId: string) => {
+    setSelectedMemberId(memberId);
+    setCurrentTab('member-profile');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const renderActivePage = () => {
+    switch (effectiveTab) {
+      case 'personal-report':
+        return (
+          <PersonalReportPage
+            onViewHistory={() => navigateToTab('report-history')}
+            onViewDetails={(id) => handleOpenReportDetail(id)}
+          />
+        );
+
+      case 'report-history':
+        return (
+          <ReportHistoryPage
+            onOpenReport={(id) => handleOpenReportDetail(id)}
+            onCreateNew={() => navigateToTab('personal-report')}
+          />
+        );
+
+      case 'report-detail':
+        return (
+          <ReportDetailPage
+            reportId={selectedReportId || ''}
+            onBack={() => navigateToTab(isManager ? 'team-dashboard' : 'report-history')}
+            onEditReport={() => navigateToTab('personal-report')}
+          />
+        );
+
+      case 'team-dashboard':
+        return (
+          <TeamDashboardPage
+            onOpenReportDetail={handleOpenReportDetail}
+            onOpenMemberProfile={handleOpenMemberProfile}
+          />
+        );
+
+      case 'manager-review':
+        return <ManagerReviewPage onOpenReportDetail={handleOpenReportDetail} />;
+
+      case 'member-profile':
+        return (
+          <TeamMemberProfilePage
+            memberId={selectedMemberId || ''}
+            onBack={() => navigateToTab('team-dashboard')}
+            onOpenReport={handleOpenReportDetail}
+          />
+        );
+
+      case 'projects':
+        return <ProjectsPage />;
+
+      case 'users':
+        return <UserManagementPage />;
+
+      default:
+        return (
+          <PersonalReportPage
+            onViewHistory={() => navigateToTab('report-history')}
+            onViewDetails={(id) => handleOpenReportDetail(id)}
+          />
+        );
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-slate-50 flex flex-col antialiased text-slate-900">
+      {/* Top Navigation */}
+      <Navbar onOpenAiAssistant={() => setIsAiModalOpen(true)} />
 
-      <div className="ticks"></div>
+      {/* Main Layout Body: Sidebar + Dynamic Page Content */}
+      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
+        <Sidebar currentTab={effectiveTab} onNavigate={navigateToTab} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto">
+          {renderActivePage()}
+        </main>
+      </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+      {/* Floating AI Assistant Trigger Pill */}
+      <button
+        type="button"
+        onClick={() => setIsAiModalOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-full shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+        title="Open AI Assistant for team summaries and Q&A"
+      >
+        <Sparkles className="h-4 w-4" />
+        <span className="hidden sm:inline">Ask AI Assistant</span>
+      </button>
 
-export default App
+      {/* AI Assistant Modal */}
+      <AiAssistantModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <ReportProvider>
+        <AppContent />
+      </ReportProvider>
+    </AuthProvider>
+  );
+};
+
+export default App;

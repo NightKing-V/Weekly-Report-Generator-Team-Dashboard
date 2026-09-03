@@ -1,4 +1,4 @@
-import { CompletedTask, HoursWorkedBreakdown } from '../types';
+import type { CompletedTask, HoursWorkedBreakdown } from '../types';
 
 export function formatDate(dateString: string): string {
   if (!dateString) return '';
