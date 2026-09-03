@@ -2,12 +2,7 @@ import React from 'react';
 import type { CompletedTask, PriorityLevel, TaskStatus } from '../../types';
 import { Plus, Trash2 } from 'lucide-react';
 import { PriorityBadge } from '../common/PriorityBadge';
-
-interface TaskTableProps {
-  tasks: CompletedTask[];
-  onChange: (tasks: CompletedTask[]) => void;
-  readOnly?: boolean;
-}
+import type { TaskTableProps } from '../../props';
 
 export const TaskTable: React.FC<TaskTableProps> = ({ tasks, onChange, readOnly = false }) => {
   const addTaskRow = () => {

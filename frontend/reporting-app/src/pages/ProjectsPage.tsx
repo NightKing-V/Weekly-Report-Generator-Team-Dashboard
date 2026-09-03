@@ -11,9 +11,12 @@ import {
   Users,
 } from 'lucide-react';
 
+import { useFetch } from '../hooks/useFetch';
+
 export const ProjectsPage: React.FC = () => {
   const { projects, addProject, updateProject, deleteProject, reports } = useReports();
   const { users, currentUser } = useAuth();
+  const { execute } = useFetch();
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
 
@@ -53,7 +56,7 @@ export const ProjectsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSaveProject = (e: React.FormEvent) => {
+  const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !code.trim()) {
       setFormError('Project Name and Code are required.');
@@ -61,25 +64,50 @@ export const ProjectsPage: React.FC = () => {
     }
 
     if (editingProjectId) {
-      updateProject(editingProjectId, {
-        name: name.trim(),
-        code: code.trim().toUpperCase(),
-        description: description.trim(),
-        status,
-        color,
-        assignedMemberIds,
-      });
+      await execute(
+        async () =>
+          updateProject(editingProjectId, {
+            name: name.trim(),
+            code: code.trim().toUpperCase(),
+            description: description.trim(),
+            status,
+            color,
+            assignedMemberIds,
+          }),
+        {
+          showSuccessSnackbar: true,
+          successMessage: `Project "${name.trim()}" updated successfully!`,
+        }
+      );
     } else {
-      addProject({
-        name: name.trim(),
-        code: code.trim().toUpperCase(),
-        description: description.trim(),
-        status,
-        color,
-        assignedMemberIds,
-      });
+      await execute(
+        async () =>
+          addProject({
+            name: name.trim(),
+            code: code.trim().toUpperCase(),
+            description: description.trim(),
+            status,
+            color,
+            assignedMemberIds,
+          }),
+        {
+          showSuccessSnackbar: true,
+          successMessage: `Project "${name.trim()}" created successfully!`,
+        }
+      );
     }
     setIsModalOpen(false);
+  };
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    if (!window.confirm(`Are you sure you want to delete project "${projectName}"?`)) return;
+    await execute(
+      async () => deleteProject(projectId),
+      {
+        showSuccessSnackbar: true,
+        successMessage: `Project "${projectName}" has been deleted.`,
+      }
+    );
   };
 
   const toggleMemberAssignment = (memberId: string) => {
@@ -199,8 +227,8 @@ export const ProjectsPage: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => deleteProject(project.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      onClick={() => handleDeleteProject(project.id, project.name)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                       title="Delete project"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

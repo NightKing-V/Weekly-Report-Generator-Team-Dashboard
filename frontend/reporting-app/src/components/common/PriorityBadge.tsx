@@ -1,10 +1,6 @@
 import React from 'react';
-import type { PriorityLevel } from '../../types';
 import { getPriorityColor } from '../../utils/formatters';
-
-interface PriorityBadgeProps {
-  priority: PriorityLevel;
-}
+import type { PriorityBadgeProps } from '../../props';
 
 export const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority }) => {
   const colors = getPriorityColor(priority);

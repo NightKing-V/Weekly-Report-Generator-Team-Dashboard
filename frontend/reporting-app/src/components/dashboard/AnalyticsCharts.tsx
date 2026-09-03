@@ -14,12 +14,7 @@ import {
   Line,
   CartesianGrid,
 } from 'recharts';
-import type { WeeklyReport, ProjectCategory } from '../../types';
-
-interface AnalyticsChartsProps {
-  reports: WeeklyReport[];
-  projects: ProjectCategory[];
-}
+import type { AnalyticsChartsProps } from '../../props';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
 

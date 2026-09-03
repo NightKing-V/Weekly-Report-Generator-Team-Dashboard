@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
-
-interface ReviewActionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  reportId: string;
-  reportAuthor: string;
-  weekLabel: string;
-  onApprove: (reportId: string, comment?: string) => void;
-  onRequestChanges: (reportId: string, comment: string) => void;
-}
+import type { ReviewActionModalProps } from '../../props';
 
 export const ReviewActionModal: React.FC<ReviewActionModalProps> = ({
   isOpen,

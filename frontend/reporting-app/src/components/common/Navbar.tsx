@@ -9,10 +9,7 @@ import {
   ChevronDown,
   LayoutDashboard,
 } from 'lucide-react';
-
-interface NavbarProps {
-  onOpenAiAssistant: () => void;
-}
+import type { NavbarProps } from '../../props';
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant }) => {
   const { currentUser, users, switchUser, logout } = useAuth();

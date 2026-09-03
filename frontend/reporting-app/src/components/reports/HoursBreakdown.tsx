@@ -2,12 +2,7 @@ import React from 'react';
 import type { HoursWorkedBreakdown } from '../../types';
 import { calculateTotalHours } from '../../utils/formatters';
 import { Clock } from 'lucide-react';
-
-interface HoursBreakdownProps {
-  hours: HoursWorkedBreakdown;
-  onChange: (hours: HoursWorkedBreakdown) => void;
-  readOnly?: boolean;
-}
+import type { HoursBreakdownProps } from '../../props';
 
 export const HoursBreakdown: React.FC<HoursBreakdownProps> = ({
   hours,

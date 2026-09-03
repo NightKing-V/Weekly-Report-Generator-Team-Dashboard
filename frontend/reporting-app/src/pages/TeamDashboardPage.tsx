@@ -16,10 +16,8 @@ import {
   Clock,
 } from 'lucide-react';
 
-interface TeamDashboardPageProps {
-  onOpenReportDetail: (reportId: string) => void;
-  onOpenMemberProfile: (memberId: string) => void;
-}
+import type { TeamDashboardPageProps } from '../props';
+import { useFetch } from '../hooks/useFetch';
 
 export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
   onOpenReportDetail,
@@ -35,6 +33,27 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
     approveReport,
     requestChanges,
   } = useReports();
+  const { execute } = useFetch();
+
+  const handleApprove = async (id: string, comment?: string) => {
+    await execute(
+      async () => approveReport(id, comment),
+      {
+        showSuccessSnackbar: true,
+        successMessage: 'Report approved successfully!',
+      }
+    );
+  };
+
+  const handleRequestChanges = async (id: string, comment: string) => {
+    await execute(
+      async () => requestChanges(id, comment),
+      {
+        showSuccessSnackbar: true,
+        successMessage: 'Requested revisions sent to contributor.',
+      }
+    );
+  };
 
   const metrics = getDashboardMetrics();
 
@@ -415,8 +434,8 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
           reportId={selectedReviewReport.id}
           reportAuthor={selectedReviewReport.userName}
           weekLabel={selectedReviewReport.weekLabel}
-          onApprove={approveReport}
-          onRequestChanges={requestChanges}
+          onApprove={handleApprove}
+          onRequestChanges={handleRequestChanges}
         />
       )}
     </div>

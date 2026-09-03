@@ -11,10 +11,7 @@ interface ChatMessage {
   timestamp: string;
 }
 
-interface AiAssistantModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import type { AiAssistantModalProps } from '../../props';
 
 export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onClose }) => {
   const { selectedWeek } = useReports();

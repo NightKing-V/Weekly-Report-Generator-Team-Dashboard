@@ -10,11 +10,7 @@ import {
   Folder,
 } from 'lucide-react';
 
-interface TeamMemberProfilePageProps {
-  memberId: string;
-  onBack: () => void;
-  onOpenReport: (reportId: string) => void;
-}
+import type { TeamMemberProfilePageProps } from '../props';
 
 export const TeamMemberProfilePage: React.FC<TeamMemberProfilePageProps> = ({
   memberId,

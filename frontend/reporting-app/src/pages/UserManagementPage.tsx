@@ -11,8 +11,11 @@ import {
   Search,
 } from 'lucide-react';
 
+import { useFetch } from '../hooks/useFetch';
+
 export const UserManagementPage: React.FC = () => {
   const { users, currentUser, updateUserRole, removeUser, addUser } = useAuth();
+  const { execute } = useFetch();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
@@ -39,7 +42,7 @@ export const UserManagementPage: React.FC = () => {
     return true;
   });
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -48,17 +51,45 @@ export const UserManagementPage: React.FC = () => {
       return;
     }
 
-    addUser({
-      name: newName.trim(),
-      email: newEmail.trim(),
-      role: newRole,
-      title: newTitle.trim(),
-      department: newDepartment.trim(),
-    });
+    await execute(
+      async () =>
+        addUser({
+          name: newName.trim(),
+          email: newEmail.trim(),
+          role: newRole,
+          title: newTitle.trim(),
+          department: newDepartment.trim(),
+        }),
+      {
+        showSuccessSnackbar: true,
+        successMessage: `User ${newName.trim()} invited and added successfully!`,
+      }
+    );
 
     setIsInviteModalOpen(false);
     setNewName('');
     setNewEmail('');
+  };
+
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    await execute(
+      async () => updateUserRole(userId, newRole),
+      {
+        showSuccessSnackbar: true,
+        successMessage: `User role updated to ${newRole.toUpperCase()}.`,
+      }
+    );
+  };
+
+  const handleRemoveUser = async (userId: string, userName: string) => {
+    if (!window.confirm(`Are you sure you want to remove ${userName}?`)) return;
+    await execute(
+      async () => removeUser(userId),
+      {
+        showSuccessSnackbar: true,
+        successMessage: `User ${userName} has been removed.`,
+      }
+    );
   };
 
   return (
@@ -185,8 +216,8 @@ export const UserManagementPage: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <select
                         value={user.role}
-                        onChange={(e) => updateUserRole(user.id, e.target.value as UserRole)}
-                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:ring-1 focus:ring-indigo-500"
+                        onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                       >
                         <option value="team_member">Team Member</option>
                         <option value="manager">Manager</option>
@@ -204,8 +235,8 @@ export const UserManagementPage: React.FC = () => {
                       {!isSelf && (
                         <button
                           type="button"
-                          onClick={() => removeUser(user.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          onClick={() => handleRemoveUser(user.id, user.name)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Remove user"
                         >
                           <Trash2 className="h-4 w-4" />

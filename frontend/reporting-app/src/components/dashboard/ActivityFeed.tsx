@@ -3,10 +3,7 @@ import type { ActivityFeedItem } from '../../types';
 import { formatRelativeTime } from '../../utils/formatters';
 import { CheckCircle2, Send, AlertCircle, Clock } from 'lucide-react';
 
-interface ActivityFeedProps {
-  activities: ActivityFeedItem[];
-  onSelectReport?: (reportId: string) => void;
-}
+import type { ActivityFeedProps } from '../../props';
 
 export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onSelectReport }) => {
   const getIcon = (type: ActivityFeedItem['type']) => {

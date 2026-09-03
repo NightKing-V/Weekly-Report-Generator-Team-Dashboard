@@ -13,10 +13,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 
-interface ReportHistoryPageProps {
-  onOpenReport: (reportId: string) => void;
-  onCreateNew: () => void;
-}
+import type { ReportHistoryPageProps } from '../props';
 
 export const ReportHistoryPage: React.FC<ReportHistoryPageProps> = ({
   onOpenReport,

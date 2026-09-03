@@ -1,20 +1,7 @@
 import React from 'react';
-import type { User, ProjectCategory, ReportStatus } from '../../types';
 import { Search, RotateCcw } from 'lucide-react';
-
-interface ReportsFilterBarProps {
-  users: User[];
-  projects: ProjectCategory[];
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  selectedMemberId: string;
-  onMemberChange: (id: string) => void;
-  selectedProjectId: string;
-  onProjectChange: (id: string) => void;
-  selectedStatus: string;
-  onStatusChange: (s: string) => void;
-  onReset: () => void;
-}
+import type { ReportStatus } from '../../types';
+import type { ReportsFilterBarProps } from '../../props';
 
 export const ReportsFilterBar: React.FC<ReportsFilterBarProps> = ({
   users,

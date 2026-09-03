@@ -1,16 +1,5 @@
 import React from 'react';
-
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  trend?: {
-    value: string;
-    isPositive: boolean;
-  };
-  highlight?: boolean;
-}
+import type { MetricCardProps } from '../../props';
 
 export const MetricCard: React.FC<MetricCardProps> = ({
   title,

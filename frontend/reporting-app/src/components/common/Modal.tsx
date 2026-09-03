@@ -1,14 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
-
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
-}
+import type { ModalProps } from '../../props';
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,

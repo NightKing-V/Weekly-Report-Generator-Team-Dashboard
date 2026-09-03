@@ -10,12 +10,32 @@ import {
   Eye,
 } from 'lucide-react';
 
-interface ManagerReviewPageProps {
-  onOpenReportDetail: (reportId: string) => void;
-}
+import type { ManagerReviewPageProps } from '../props';
+import { useFetch } from '../hooks/useFetch';
 
 export const ManagerReviewPage: React.FC<ManagerReviewPageProps> = ({ onOpenReportDetail }) => {
   const { reports, approveReport, requestChanges } = useReports();
+  const { execute } = useFetch();
+
+  const handleApprove = async (id: string, comment?: string) => {
+    await execute(
+      async () => approveReport(id, comment),
+      {
+        showSuccessSnackbar: true,
+        successMessage: 'Report successfully approved!',
+      }
+    );
+  };
+
+  const handleRequestChanges = async (id: string, comment: string) => {
+    await execute(
+      async () => requestChanges(id, comment),
+      {
+        showSuccessSnackbar: true,
+        successMessage: 'Feedback and correction request dispatched.',
+      }
+    );
+  };
 
   const [activeTab, setActiveTab] = useState<'pending' | 'reviewed'>('pending');
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -226,8 +246,8 @@ export const ManagerReviewPage: React.FC<ManagerReviewPageProps> = ({ onOpenRepo
           reportId={selectedReport.id}
           reportAuthor={selectedReport.userName}
           weekLabel={selectedReport.weekLabel}
-          onApprove={approveReport}
-          onRequestChanges={requestChanges}
+          onApprove={handleApprove}
+          onRequestChanges={handleRequestChanges}
         />
       )}
 

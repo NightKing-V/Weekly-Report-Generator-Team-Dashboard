@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
-import type { WeeklyReport } from '../../types';
 import { Modal } from '../common/Modal';
 import { History, MessageSquare, CheckCircle2, Clock } from 'lucide-react';
 import { formatDate, formatRelativeTime } from '../../utils/formatters';
-
-interface VersionHistoryViewerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  report: WeeklyReport;
-}
+import type { VersionHistoryViewerProps } from '../../props';
 
 export const VersionHistoryViewer: React.FC<VersionHistoryViewerProps> = ({
   isOpen,

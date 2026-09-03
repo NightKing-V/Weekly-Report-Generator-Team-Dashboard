@@ -26,13 +26,7 @@ import {
   FileText,
   ListTodo,
 } from 'lucide-react';
-
-interface ReportFormProps {
-  initialReport?: Partial<WeeklyReport>;
-  onSaveDraft: (data: Partial<WeeklyReport>) => void;
-  onSubmit: (data: Partial<WeeklyReport>) => void;
-  isSubmitting?: boolean;
-}
+import type { ReportFormProps } from '../../props';
 
 export const ReportForm: React.FC<ReportFormProps> = ({
   initialReport,

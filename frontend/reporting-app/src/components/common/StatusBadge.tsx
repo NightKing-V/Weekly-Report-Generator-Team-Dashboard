@@ -1,11 +1,6 @@
 import React from 'react';
-import type { ReportStatus } from '../../types';
 import { getStatusColor } from '../../utils/formatters';
-
-interface StatusBadgeProps {
-  status: ReportStatus | 'Not Started';
-  size?: 'sm' | 'md' | 'lg';
-}
+import type { StatusBadgeProps } from '../../props';
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
   const colors = getStatusColor(status);

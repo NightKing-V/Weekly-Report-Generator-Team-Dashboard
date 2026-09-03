@@ -12,20 +12,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-export type NavigationTab =
-  | 'personal-report'
-  | 'report-history'
-  | 'report-detail'
-  | 'team-dashboard'
-  | 'manager-review'
-  | 'member-profile'
-  | 'projects'
-  | 'users';
-
-interface SidebarProps {
-  currentTab: NavigationTab;
-  onNavigate: (tab: NavigationTab) => void;
-}
+import type { NavigationTab, SidebarProps } from '../../props';
+export type { NavigationTab, SidebarProps };
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
   const { currentUser } = useAuth();

@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
-import type { WeeklyReport } from '../../types';
 import { AlertTriangle, Award, Flag, Star } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
-
-interface SideBySideComparisonProps {
-  reports: WeeklyReport[];
-  selectedWeek: string;
-}
+import type { SideBySideComparisonProps } from '../../props';
 
 export const SideBySideComparison: React.FC<SideBySideComparisonProps> = ({
   reports,

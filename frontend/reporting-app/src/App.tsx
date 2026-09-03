@@ -6,8 +6,11 @@ import { fetchReports, fetchProjects, fetchActivities } from './store/slices/rep
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ReportProvider } from './context/ReportContext';
 import { Navbar } from './components/common/Navbar';
-import { Sidebar, type NavigationTab } from './components/common/Sidebar';
+import { Sidebar } from './components/common/Sidebar';
+import { SnackbarContainer } from './components/common/SnackbarContainer';
 import { AiAssistantModal } from './components/ai/AiAssistantModal';
+import type { NavigationTab } from './props';
+import { useFetch } from './hooks/useFetch';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -24,6 +27,7 @@ import { Sparkles } from 'lucide-react';
 const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
   const { currentUser } = useAuth();
+  const { execute } = useFetch();
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
 
@@ -35,13 +39,23 @@ const AppContent: React.FC = () => {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
-  // Synchronize backend data from FastAPI endpoints
+  // Synchronize backend data from FastAPI endpoints using useFetch
   useEffect(() => {
-    dispatch(fetchUsers());
-    dispatch(fetchReports());
-    dispatch(fetchProjects());
-    dispatch(fetchActivities());
-  }, [dispatch]);
+    execute(
+      async () => {
+        await Promise.all([
+          dispatch(fetchUsers()).unwrap(),
+          dispatch(fetchReports()).unwrap(),
+          dispatch(fetchProjects()).unwrap(),
+          dispatch(fetchActivities()).unwrap(),
+        ]);
+      },
+      {
+        showErrorSnackbar: true,
+        defaultErrorMessage: 'Could not connect to backend server at localhost:8000.',
+      }
+    );
+  }, [dispatch, execute]);
 
   // Derived effective tab prevents non-managers from seeing manager tabs
   const effectiveTab: NavigationTab =
@@ -50,7 +64,12 @@ const AppContent: React.FC = () => {
       : currentTab;
 
   if (!currentUser) {
-    return <LoginPage />;
+    return (
+      <>
+        <LoginPage />
+        <SnackbarContainer />
+      </>
+    );
   }
 
   const navigateToTab = (tab: NavigationTab) => {
@@ -160,6 +179,9 @@ const AppContent: React.FC = () => {
 
       {/* AI Assistant Modal */}
       <AiAssistantModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
+
+      {/* Global Snackbar & Error Notification Container */}
+      <SnackbarContainer />
     </div>
   );
 };

@@ -23,11 +23,8 @@ import {
   Star,
 } from 'lucide-react';
 
-interface ReportDetailPageProps {
-  reportId: string;
-  onBack: () => void;
-  onEditReport?: (reportId: string) => void;
-}
+import type { ReportDetailPageProps } from '../props';
+import { useFetch } from '../hooks/useFetch';
 
 export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
   reportId,
@@ -36,9 +33,30 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
 }) => {
   const { currentUser } = useAuth();
   const { getReportById, approveReport, requestChanges } = useReports();
+  const { execute } = useFetch();
 
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const handleApprove = async (id: string, comment?: string) => {
+    await execute(
+      async () => approveReport(id, comment),
+      {
+        showSuccessSnackbar: true,
+        successMessage: 'Report successfully approved!',
+      }
+    );
+  };
+
+  const handleRequestChanges = async (id: string, comment: string) => {
+    await execute(
+      async () => requestChanges(id, comment),
+      {
+        showSuccessSnackbar: true,
+        successMessage: 'Revisions requested and sent to contributor.',
+      }
+    );
+  };
 
   const report = getReportById(reportId);
 
@@ -350,8 +368,8 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
         reportId={report.id}
         reportAuthor={report.userName}
         weekLabel={report.weekLabel}
-        onApprove={approveReport}
-        onRequestChanges={requestChanges}
+        onApprove={handleApprove}
+        onRequestChanges={handleRequestChanges}
       />
     </div>
   );

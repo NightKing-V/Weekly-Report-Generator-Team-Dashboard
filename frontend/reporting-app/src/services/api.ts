@@ -7,6 +7,15 @@ import type {
   DashboardMetrics,
 } from '../types';
 
+export class ApiError extends Error {
+  statusCode: number;
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.name = 'ApiError';
+  }
+}
+
 const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -16,27 +25,37 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...(options.headers || {}),
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    let errorDetail = response.statusText;
-    try {
-      const errJson = await response.json();
-      errorDetail = errJson.detail || JSON.stringify(errJson);
-    } catch {
-      // ignore
+    if (!response.ok) {
+      let errorDetail = `Request failed with status ${response.status}`;
+      try {
+        const errJson = await response.json();
+        if (errJson.detail) {
+          errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+        }
+      } catch {
+        errorDetail = response.statusText || errorDetail;
+      }
+      throw new ApiError(response.status, errorDetail);
     }
-    throw new Error(errorDetail || `Request failed with status ${response.status}`);
-  }
 
-  if (response.status === 204) {
-    return null as T;
-  }
+    if (response.status === 204) {
+      return null as T;
+    }
 
-  return response.json();
+    return response.json();
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    // Network or offline error
+    throw new ApiError(0, 'Network connection failed. Please ensure the backend server is reachable.');
+  }
 }
 
 export const apiClient = {
@@ -143,4 +162,3 @@ export const apiClient = {
       }),
   },
 };
-
