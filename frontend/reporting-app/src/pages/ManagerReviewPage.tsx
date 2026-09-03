@@ -138,7 +138,7 @@ export const ManagerReviewPage: React.FC<ManagerReviewPageProps> = ({ onOpenRepo
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center font-bold text-xs text-indigo-700">
-                      {report.userName.charAt(0)}
+                      {(report.userName || 'U').charAt(0)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">

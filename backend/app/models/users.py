@@ -1,5 +1,5 @@
 from typing import Optional, Literal
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 
 UserRole = Literal["team_member", "manager", "admin"]
 
@@ -18,9 +18,24 @@ class UserModel(BaseModel):
         populate_by_name = True
 
 
+class UserInDB(UserModel):
+    hashedPassword: Optional[str] = None
+
+
 class UserCreate(BaseModel):
     name: str
     email: str
+    password: Optional[str] = "password123"
+    role: UserRole = "team_member"
+    title: Optional[str] = "Software Engineer"
+    department: Optional[str] = "Engineering"
+    avatarUrl: Optional[str] = None
+
+
+class UserRegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
     role: UserRole = "team_member"
     title: Optional[str] = "Software Engineer"
     department: Optional[str] = "Engineering"
@@ -33,5 +48,11 @@ class UserUpdateRole(BaseModel):
 
 class LoginRequest(BaseModel):
     email: str
+    password: Optional[str] = "password123"
     role: Optional[UserRole] = None
 
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserModel

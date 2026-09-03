@@ -15,7 +15,6 @@ interface NotificationState {
   showSnackbar: (payload: {
     type: SnackbarType;
     message: string;
-    statusCode?: number;
     duration?: number;
   }) => void;
   hideSnackbar: (id: string) => void;
@@ -25,12 +24,12 @@ interface NotificationState {
 export const useNotificationStore = create<NotificationState>((set) => ({
   notifications: [],
 
-  showSnackbar: ({ type, message, statusCode, duration = 4500 }) => {
+  showSnackbar: ({ type, message, duration = 4500 }) => {
     const id = `snack-${crypto.randomUUID()}`;
     set((state) => ({
       notifications: [
         ...state.notifications,
-        { id, type, message, statusCode, duration },
+        { id, type, message, duration },
       ],
     }));
   },

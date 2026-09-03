@@ -3,3 +3,4 @@ export interface AiAssistantModalProps {
   onClose: () => void;
 }
 
+export type AiAssistantPanelProps = AiAssistantModalProps;

@@ -17,12 +17,34 @@ export class ApiError extends Error {
 }
 
 const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const AUTH_TOKEN_KEY = 'team_dashboard_jwt_token';
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token: string | null) {
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
-  const headers = {
+  const token = getAuthToken();
+
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...((options.headers as Record<string, string>) || {}),
   };
 
   try {
@@ -59,78 +81,89 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const apiClient = {
-  // Users API
+  // Users & Authentication API
   users: {
     getAll: () => request<User[]>('/api/users'),
     getById: (id: string) => request<User>(`/api/users/${id}`),
-    login: (email: string, role?: UserRole) =>
-      request<User>('/api/users/login', {
+    getMe: () => request<User>('/api/users/me'),
+    login: (email: string, password?: string, role?: UserRole) =>
+      request<AuthResponse>('/api/users/login', {
         method: 'POST',
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, password: password || 'password123', role }),
       }),
-    create: (user: Omit<User, 'id' | 'createdAt'>) =>
+    register: (payload: {
+      name: string;
+      email: string;
+      password?: string;
+      role: UserRole;
+      title?: string;
+      department?: string;
+      avatarUrl?: string;
+    }) =>
+      request<AuthResponse>('/api/users/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...payload,
+          password: payload.password || 'password123',
+        }),
+      }),
+    create: (user: Omit<User, 'id' | 'createdAt'> & { password?: string }) =>
       request<User>('/api/users', {
         method: 'POST',
-        body: JSON.stringify(user),
+        body: JSON.stringify({
+          ...user,
+          password: user.password || 'password123',
+        }),
       }),
-    updateRole: (id: string, role: UserRole) =>
-      request<User>(`/api/users/${id}/role`, {
+    updateRole: (userId: string, role: UserRole) =>
+      request<User>(`/api/users/${userId}/role`, {
         method: 'PATCH',
         body: JSON.stringify({ role }),
       }),
-    delete: (id: string) =>
-      request<void>(`/api/users/${id}`, {
+    delete: (userId: string) =>
+      request<null>(`/api/users/${userId}`, {
         method: 'DELETE',
       }),
   },
 
-  // Reports API
+  // Weekly Reports API
   reports: {
-    getAll: (filters?: { week?: string; userId?: string; projectId?: string; status?: string }) => {
+    getAll: (filters?: { week?: string; userId?: string; status?: string }) => {
       const params = new URLSearchParams();
-      if (filters?.week && filters.week !== 'all') params.append('week', filters.week);
-      if (filters?.userId && filters.userId !== 'all') params.append('user_id', filters.userId);
-      if (filters?.projectId && filters.projectId !== 'all') params.append('project_id', filters.projectId);
-      if (filters?.status && filters.status !== 'All') params.append('status', filters.status);
-      const q = params.toString();
-      return request<WeeklyReport[]>(`/api/reports${q ? `?${q}` : ''}`);
+      if (filters?.week) params.append('week', filters.week);
+      if (filters?.userId) params.append('user_id', filters.userId);
+      if (filters?.status) params.append('status', filters.status);
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      return request<WeeklyReport[]>(`/api/reports${queryString}`);
     },
     getById: (id: string) => request<WeeklyReport>(`/api/reports/${id}`),
-    saveDraft: (reportData: Partial<WeeklyReport>) =>
+    saveDraft: (report: Partial<WeeklyReport>) =>
       request<WeeklyReport>('/api/reports/draft', {
         method: 'POST',
-        body: JSON.stringify(reportData),
+        body: JSON.stringify(report),
       }),
-    submit: (reportData: Partial<WeeklyReport>) =>
+    submit: (report: Partial<WeeklyReport>) =>
       request<WeeklyReport>('/api/reports/submit', {
         method: 'POST',
-        body: JSON.stringify(reportData),
+        body: JSON.stringify(report),
       }),
-    approve: (reportId: string, author: { id: string; name: string; role: string }, comment?: string) =>
-      request<WeeklyReport>(`/api/reports/${reportId}/approve`, {
+    approve: (id: string, reviewer: { id: string; name: string; role: string }, comment?: string) =>
+      request<WeeklyReport>(`/api/reports/${id}/approve`, {
         method: 'POST',
-        body: JSON.stringify({
-          authorId: author.id,
-          authorName: author.name,
-          authorRole: author.role,
-          comment,
-        }),
+        body: JSON.stringify({ reviewer, comment: comment || 'Report reviewed and approved.' }),
       }),
-    requestChanges: (reportId: string, author: { id: string; name: string; role: string }, comment: string) =>
-      request<WeeklyReport>(`/api/reports/${reportId}/request-changes`, {
+    requestChanges: (id: string, reviewer: { id: string; name: string; role: string }, comment: string) =>
+      request<WeeklyReport>(`/api/reports/${id}/request-changes`, {
         method: 'POST',
-        body: JSON.stringify({
-          authorId: author.id,
-          authorName: author.name,
-          authorRole: author.role,
-          comment,
-        }),
+        body: JSON.stringify({ reviewer, comment }),
       }),
-    getMetrics: (week: string) =>
-      request<DashboardMetrics>(`/api/reports/metrics/summary?week=${encodeURIComponent(week)}`),
+    getMetrics: (week?: string) => {
+      const qs = week ? `?week=${encodeURIComponent(week)}` : '';
+      return request<DashboardMetrics>(`/api/reports/metrics/summary${qs}`);
+    },
   },
 
-  // Projects API
+  // Project Categories API
   projects: {
     getAll: () => request<ProjectCategory[]>('/api/projects'),
     create: (project: Omit<ProjectCategory, 'id' | 'createdAt'>) =>
@@ -144,21 +177,22 @@ export const apiClient = {
         body: JSON.stringify(updates),
       }),
     delete: (id: string) =>
-      request<void>(`/api/projects/${id}`, {
+      request<null>(`/api/projects/${id}`, {
         method: 'DELETE',
       }),
   },
 
-  // Activity & Chat API
+  // Activity Feed API
   activities: {
-    getAll: () => request<ActivityFeedItem[]>('/api/activities'),
+    getAll: (limit: number = 30) => request<ActivityFeedItem[]>(`/api/activities?limit=${limit}`),
   },
 
+  // AI Chat Assistant API
   chat: {
-    ask: (message: string, weekLabel?: string) =>
-      request<{ reply: string; sourcesCount: number }>('/api/chat/ask', {
+    ask: (message: string, selectedWeek?: string) =>
+      request<{ reply: string }>('/api/chat/ask', {
         method: 'POST',
-        body: JSON.stringify({ message, weekLabel }),
+        body: JSON.stringify({ message, selectedWeek }),
       }),
   },
 };

@@ -21,6 +21,7 @@ import { Sparkles } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const currentUser = useAuthStore((state) => state.currentUser);
+  const token = useAuthStore((state) => state.token);
   const { execute } = useFetch();
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
@@ -33,8 +34,12 @@ const AppContent: React.FC = () => {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
-  // Synchronize backend data from FastAPI endpoints using Zustand actions
+  // Synchronize workspace data ONLY after successful login when token is present
   useEffect(() => {
+    if (!currentUser || !token) {
+      return;
+    }
+
     execute(
       async () => {
         await Promise.all([
@@ -46,10 +51,10 @@ const AppContent: React.FC = () => {
       },
       {
         showErrorSnackbar: true,
-        defaultErrorMessage: 'Could not connect to backend server at localhost:8000.',
+        defaultErrorMessage: 'Could not synchronize workspace data with server.',
       }
     );
-  }, [execute]);
+  }, [currentUser, token, execute]);
 
   // Derived effective tab prevents non-managers from seeing manager tabs
   const effectiveTab: NavigationTab =
@@ -57,7 +62,8 @@ const AppContent: React.FC = () => {
       ? 'personal-report'
       : currentTab;
 
-  if (!currentUser) {
+  // If unauthenticated or no valid token, present login page without fetching
+  if (!currentUser || !token) {
     return (
       <>
         <LoginPage />
@@ -149,7 +155,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col antialiased text-slate-900">
       {/* Top Navigation */}
-      <Navbar onOpenAiAssistant={() => setIsAiModalOpen(true)} />
+      <Navbar onOpenAiAssistant={() => setIsAiModalOpen((prev) => !prev)} />
 
       {/* Main Layout Body: Sidebar + Dynamic Page Content */}
       <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
@@ -160,18 +166,20 @@ const AppContent: React.FC = () => {
         </main>
       </div>
 
-      {/* Floating AI Assistant Trigger Pill */}
-      <button
-        type="button"
-        onClick={() => setIsAiModalOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-full shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
-        title="Open AI Assistant for team summaries and Q&A"
-      >
-        <Sparkles className="h-4 w-4" />
-        <span className="hidden sm:inline">Ask AI Assistant</span>
-      </button>
+      {/* Floating AI Assistant Trigger Pill (shown when panel is closed) */}
+      {!isAiModalOpen && (
+        <button
+          type="button"
+          onClick={() => setIsAiModalOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-full shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+          title="Open AI Assistant for team summaries and Q&A"
+        >
+          <Sparkles className="h-4 w-4" />
+          <span className="hidden sm:inline">Ask AI Assistant</span>
+        </button>
+      )}
 
-      {/* AI Assistant Modal */}
+      {/* Hovering Fixed AI Assistant Panel */}
       <AiAssistantModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
 
       {/* Global Snackbar & Error Notification Container */}

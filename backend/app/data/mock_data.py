@@ -4,6 +4,10 @@ Contains realistic mock users, projects, weekly reports, and audit activities
 matching the requirements of Technical SE Assignment_sisenco.pdf.
 """
 
+from app.middleware.auth import hash_password
+
+DEFAULT_HASHED_PASSWORD = hash_password("password123")
+
 INITIAL_USERS = [
     {
         "id": "user-1",
@@ -13,6 +17,7 @@ INITIAL_USERS = [
         "title": "Engineering Manager",
         "department": "Core Platform",
         "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face",
+        "hashedPassword": DEFAULT_HASHED_PASSWORD,
         "createdAt": "2026-01-10T08:00:00Z",
     },
     {
@@ -23,6 +28,7 @@ INITIAL_USERS = [
         "title": "Senior Frontend Engineer",
         "department": "Product UI",
         "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=face",
+        "hashedPassword": DEFAULT_HASHED_PASSWORD,
         "createdAt": "2026-02-15T09:30:00Z",
     },
     {
@@ -33,6 +39,7 @@ INITIAL_USERS = [
         "title": "Backend Engineer",
         "department": "Cloud Services",
         "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=face",
+        "hashedPassword": DEFAULT_HASHED_PASSWORD,
         "createdAt": "2026-03-01T10:00:00Z",
     },
     {
@@ -43,6 +50,7 @@ INITIAL_USERS = [
         "title": "Full Stack Engineer",
         "department": "Growth Engineering",
         "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face",
+        "hashedPassword": DEFAULT_HASHED_PASSWORD,
         "createdAt": "2026-03-20T11:15:00Z",
     },
     {
@@ -53,6 +61,7 @@ INITIAL_USERS = [
         "title": "QA & Automation Engineer",
         "department": "Quality Assurance",
         "avatarUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop&crop=face",
+        "hashedPassword": DEFAULT_HASHED_PASSWORD,
         "createdAt": "2026-04-05T08:45:00Z",
     },
 ]

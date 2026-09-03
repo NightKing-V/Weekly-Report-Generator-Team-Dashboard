@@ -171,11 +171,11 @@ export const UserManagementPage: React.FC = () => {
                           {user.avatarUrl ? (
                             <img
                               src={user.avatarUrl}
-                              alt={user.name}
+                              alt={user.name || 'User'}
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            user.name.charAt(0)
+                            (user.name || user.email || 'U').charAt(0).toUpperCase()
                           )}
                         </div>
                         <div>

@@ -141,9 +141,6 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
             }`}
           >
             <span>Side-by-Side</span>
-            <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.2 rounded font-bold">
-              Bonus
-            </span>
           </button>
         </div>
       </div>

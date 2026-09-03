@@ -9,6 +9,7 @@ from app.data.mock_data import (
     INITIAL_PROJECTS,
     INITIAL_REPORTS,
     INITIAL_ACTIVITIES,
+    DEFAULT_HASHED_PASSWORD,
 )
 
 load_dotenv()
@@ -66,6 +67,10 @@ async def seed_database_if_empty():
     user_count = await users_coll.count_documents({})
 
     if user_count > 0:
+        await users_coll.update_many(
+            {"hashedPassword": {"$exists": False}},
+            {"$set": {"hashedPassword": DEFAULT_HASHED_PASSWORD}},
+        )
         logger.info("MongoDB collections already populated. Skipping seeding.")
         return
 

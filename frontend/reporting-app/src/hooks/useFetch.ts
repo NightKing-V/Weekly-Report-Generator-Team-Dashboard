@@ -38,7 +38,6 @@ export function useFetch() {
           showSnackbar({
             type: 'success',
             message: options.successMessage,
-            statusCode: 200,
           });
         }
 
@@ -80,7 +79,6 @@ export function useFetch() {
           showSnackbar({
             type: 'error',
             message: userMessage,
-            statusCode: code,
           });
         }
 

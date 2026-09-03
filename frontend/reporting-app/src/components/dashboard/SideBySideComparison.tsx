@@ -20,9 +20,6 @@ export const SideBySideComparison: React.FC<SideBySideComparisonProps> = ({
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Cross-Team Section Comparison
             </h4>
-            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
-              Bonus Feature
-            </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5">
             Compare all contributors' key challenges or highlights for {selectedWeek}

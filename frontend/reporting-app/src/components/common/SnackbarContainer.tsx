@@ -48,25 +48,20 @@ const SnackbarItem: React.FC<{ notification: SnackbarNotification }> = ({ notifi
 
   return (
     <div
-      className={`flex items-start gap-3 p-3.5 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${style.bg} max-w-md w-full`}
+      className={`flex items-center gap-3 p-3.5 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${style.bg} max-w-md w-full`}
     >
-      {style.icon}
+      <div className="shrink-0 flex items-center justify-center">
+        {style.icon}
+      </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          {notification.statusCode !== undefined && notification.statusCode > 0 && (
-            <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${style.pill}`}>
-              HTTP {notification.statusCode}
-            </span>
-          )}
-        </div>
-        <p className="text-xs font-medium leading-relaxed mt-0.5 break-words">
+        <p className="text-xs font-medium leading-relaxed break-words">
           {notification.message}
         </p>
       </div>
       <button
         type="button"
         onClick={() => hideSnackbar(notification.id)}
-        className="text-white/60 hover:text-white p-1 rounded-lg transition-colors cursor-pointer shrink-0"
+        className="text-white/60 hover:text-white p-1 rounded-lg transition-colors cursor-pointer shrink-0 self-center"
         title="Dismiss"
       >
         <X className="h-3.5 w-3.5" />
@@ -81,7 +76,7 @@ export const SnackbarContainer: React.FC = () => {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-auto">
+    <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-auto">
       {notifications.map((n) => (
         <SnackbarItem key={n.id} notification={n} />
       ))}

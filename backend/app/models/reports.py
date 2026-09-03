@@ -1,5 +1,5 @@
 from typing import Optional, List, Literal, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 TaskPriority = Literal["Low", "Medium", "High", "Urgent"]
 TaskStatus = Literal["Completed", "In Progress", "Delayed", "Blocked"]
@@ -93,6 +93,19 @@ class WeeklyReportModel(BaseModel):
     reviewedAt: Optional[str] = None
     createdAt: Optional[str] = None
     updatedAt: Optional[str] = None
+
+    @field_validator(
+        "tasksCompleted",
+        "tasksPlannedNextWeek",
+        "blockers",
+        "achievements",
+        "versions",
+        "reviewHistory",
+        mode="before",
+    )
+    @classmethod
+    def default_empty_list_if_none(cls, v):
+        return v if v is not None else []
 
     class Config:
         populate_by_name = True

@@ -79,11 +79,11 @@ export const TeamMemberProfilePage: React.FC<TeamMemberProfilePageProps> = ({
               {member.avatarUrl ? (
                 <img
                   src={member.avatarUrl}
-                  alt={member.name}
+                  alt={member.name || 'Member'}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                member.name.charAt(0)
+                (member.name || member.email || 'U').charAt(0).toUpperCase()
               )}
             </div>
             <div>

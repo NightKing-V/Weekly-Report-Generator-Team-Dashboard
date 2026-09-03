@@ -8,8 +8,11 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
+import { useFetch } from '../hooks/useFetch';
+
 export const LoginPage: React.FC = () => {
   const { login, register } = useAuth();
+  const { execute, loading } = useFetch();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -20,7 +23,7 @@ export const LoginPage: React.FC = () => {
   const [department, setDepartment] = useState('Engineering');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -29,21 +32,42 @@ export const LoginPage: React.FC = () => {
         setErrorMessage('Please enter your email.');
         return;
       }
-      const success = login(email.trim());
-      if (!success) {
-        setErrorMessage('Login failed. Please check your credentials.');
-      }
+      const pass = password || 'password123';
+      await execute(
+        async () => login(email.trim(), pass),
+        {
+          showSuccessSnackbar: true,
+          successMessage: 'Welcome back! Authentication successful.',
+          showErrorSnackbar: true,
+          defaultErrorMessage: 'Invalid email or password.',
+        }
+      );
     } else {
       if (!name.trim() || !email.trim()) {
         setErrorMessage('Please fill in all required fields.');
         return;
       }
-      register(name.trim(), email.trim(), role, title.trim(), department.trim());
+      const pass = password || 'password123';
+      await execute(
+        async () => register(name.trim(), email.trim(), pass, role, title.trim(), department.trim()),
+        {
+          showSuccessSnackbar: true,
+          successMessage: 'Account registered and authenticated successfully!',
+          showErrorSnackbar: true,
+        }
+      );
     }
   };
 
-  const handleQuickLogin = (targetEmail: string) => {
-    login(targetEmail);
+  const handleQuickLogin = async (targetEmail: string) => {
+    await execute(
+      async () => login(targetEmail, 'password123'),
+      {
+        showSuccessSnackbar: true,
+        successMessage: `Signed in as ${targetEmail}`,
+        showErrorSnackbar: true,
+      }
+    );
   };
 
   return (
@@ -177,7 +201,9 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-slate-700">Password</label>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
@@ -196,16 +222,17 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-100 transition-colors"
+              disabled={loading}
+              className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold shadow-md shadow-indigo-100 transition-colors cursor-pointer"
             >
-              {mode === 'login' ? 'Sign In to Workspace' : 'Complete Registration'}
+              {loading ? 'Authenticating...' : mode === 'login' ? 'Sign In with JWT' : 'Complete Registration'}
             </button>
           </form>
 
           {/* Quick Demo Logins (Crucial for Evaluation & Demo Video) */}
           <div className="mt-6 pt-6 border-t border-slate-100 space-y-2.5">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
-              1-Click Demo Profiles
+              Demo Profiles
             </p>
             <div className="space-y-1.5">
               <button

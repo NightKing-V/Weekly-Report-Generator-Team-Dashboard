@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { User, UserRole } from '../types';
-import { apiClient } from '../services/api';
+import { apiClient, getAuthToken, setAuthToken } from '../services/api';
 
 const STORAGE_KEY = 'team_dashboard_current_user';
 
@@ -8,7 +8,21 @@ const getInitialCurrentUser = (): User | null => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && (parsed.id || parsed.email)) {
+        const email = parsed.email || 'user@team.com';
+        const fallbackName = email.split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
+        return {
+          id: parsed.id || 'user-default',
+          name: parsed.name || fallbackName || 'Team Member',
+          email,
+          role: parsed.role || 'team_member',
+          title: parsed.title || 'Software Engineer',
+          department: parsed.department || 'Engineering',
+          avatarUrl: parsed.avatarUrl || null,
+          createdAt: parsed.createdAt || null,
+        };
+      }
     } catch {
       // ignore
     }
@@ -18,21 +32,23 @@ const getInitialCurrentUser = (): User | null => {
 
 interface AuthState {
   currentUser: User | null;
+  token: string | null;
   users: User[];
   loading: boolean;
 
   fetchUsers: () => Promise<User[]>;
-  login: (email: string, role?: UserRole) => Promise<boolean>;
+  login: (email: string, password?: string, role?: UserRole) => Promise<boolean>;
   register: (
     name: string,
     email: string,
-    role: UserRole,
+    password?: string,
+    role?: UserRole,
     title?: string,
     department?: string
   ) => Promise<User>;
   updateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
-  addUser: (userData: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
+  addUser: (userData: Omit<User, 'id' | 'createdAt'> & { password?: string }) => Promise<User>;
   switchUser: (userId: string) => void;
   logout: () => void;
   setCurrentUser: (user: User | null) => void;
@@ -40,6 +56,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: getInitialCurrentUser(),
+  token: getAuthToken(),
   users: [],
   loading: false,
 
@@ -62,19 +79,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  login: async (email: string, role?: UserRole) => {
+  login: async (email: string, password?: string, role?: UserRole) => {
     set({ loading: true });
     try {
-      const user = await apiClient.users.login(email, role);
+      const response = await apiClient.users.login(email, password, role);
+      const user = response.user;
+      const token = response.access_token;
+
+      setAuthToken(token);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+
       set((state) => {
         const exists = state.users.some((u) => u.id === user.id);
         return {
           currentUser: user,
+          token,
           users: exists ? state.users : [...state.users, user],
           loading: false,
         };
       });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
       return true;
     } catch (err) {
       set({ loading: false });
@@ -82,22 +105,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (name, email, role, title, department) => {
+  register: async (name, email, password, role = 'team_member', title, department) => {
     set({ loading: true });
     try {
-      const created = await apiClient.users.create({
+      const response = await apiClient.users.register({
         name,
         email,
+        password: password || 'password123',
         role,
         title: title || 'Software Engineer',
         department: department || 'Engineering',
       });
+      const created = response.user;
+      const token = response.access_token;
+
+      setAuthToken(token);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(created));
+
       set((state) => ({
         currentUser: created,
+        token,
         users: [...state.users, created],
         loading: false,
       }));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(created));
       return created;
     } catch (err) {
       set({ loading: false });
@@ -140,6 +170,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       let currentUser = state.currentUser;
       if (currentUser && currentUser.id === userId) {
         currentUser = null;
+        setAuthToken(null);
         localStorage.removeItem(STORAGE_KEY);
       }
       return { users, currentUser };
@@ -155,8 +186,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    set({ currentUser: null });
+    setAuthToken(null);
     localStorage.removeItem(STORAGE_KEY);
+    set({ currentUser: null, token: null });
   },
 
   setCurrentUser: (user) => {
@@ -164,8 +196,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     } else {
+      setAuthToken(null);
       localStorage.removeItem(STORAGE_KEY);
+      set({ token: null });
     }
   },
 }));
-

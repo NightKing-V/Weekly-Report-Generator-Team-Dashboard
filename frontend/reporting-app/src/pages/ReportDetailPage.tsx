@@ -161,7 +161,7 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
                 onClick={() => approveReport(report.id)}
                 className="px-3.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
               >
-                1-Click Approve
+                Approve
               </button>
               <button
                 type="button"
