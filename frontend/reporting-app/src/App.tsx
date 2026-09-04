@@ -34,6 +34,7 @@ const AppContent: React.FC = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Synchronize workspace data ONLY after successful login when token is present
   useEffect(() => {
@@ -165,14 +166,27 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col antialiased text-slate-900">
       {/* Top Navigation */}
-      <Navbar onOpenAiAssistant={() => setIsAiModalOpen((prev) => !prev)} />
+      <Navbar
+        onOpenAiAssistant={() => setIsAiModalOpen((prev) => !prev)}
+        onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+      />
 
-      {/* Main Layout Body: Sidebar + Dynamic Page Content */}
-      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
-        <Sidebar currentTab={effectiveTab} onNavigate={navigateToTab} />
+      {/* Main Layout Body: Fixed Left Sidebar + Dynamic Page Content */}
+      <div className="flex-1 flex w-full">
+        <Sidebar
+          currentTab={effectiveTab}
+          onNavigate={(tab) => {
+            navigateToTab(tab);
+            setIsMobileSidebarOpen(false);
+          }}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto">
-          {renderActivePage()}
+        <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 min-w-0">
+          <div className="max-w-[1600px] mx-auto w-full">
+            {renderActivePage()}
+          </div>
         </main>
       </div>
 

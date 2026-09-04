@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
 import {
@@ -6,12 +6,24 @@ import {
   Sparkles,
   LogOut,
   LayoutDashboard,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Menu,
 } from 'lucide-react';
 import type { NavbarProps } from '../../props';
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant }) => {
-  const { currentUser, logout } = useAuth();
-  const { selectedWeek, setSelectedWeek, availableWeeks } = useReports();
+export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant, onToggleSidebar }) => {
+  const { currentUser, logout, login } = useAuth();
+  const {
+    selectedWeek,
+    setSelectedWeek,
+    availableWeeks,
+    selectDate,
+    goToPreviousWeek,
+    goToNextWeek,
+  } = useReports();
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   if (!currentUser) return null;
 
@@ -22,9 +34,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand / Title */}
+        {/* Brand / Title & Mobile Menu Button */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200">
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Toggle Menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 shrink-0">
             <LayoutDashboard className="h-5 w-5" />
           </div>
           <div>
@@ -38,25 +60,103 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant }) => {
           </div>
         </div>
 
-        {/* Center: Week Selector */}
-        <div className="hidden lg:flex items-center gap-2 bg-slate-100 rounded-lg p-1 text-xs border border-slate-200">
-          <Calendar className="h-3.5 w-3.5 text-slate-500 ml-2" />
-          <span className="font-medium text-slate-600">Active Week:</span>
-          <select
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-            className="bg-transparent font-semibold text-slate-900 border-none outline-hidden cursor-pointer"
+        {/* Center: Standardized Monday - Sunday Week Selector */}
+        <div className="hidden lg:flex items-center gap-1.5 bg-slate-100/90 rounded-xl p-1 text-xs border border-slate-200/90 shadow-2xs">
+          <button
+            type="button"
+            onClick={goToPreviousWeek}
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-colors cursor-pointer"
+            title="Previous Week (Mon - Sun)"
           >
-            {availableWeeks.map((w) => (
-              <option key={w} value={w}>
-                {w}
-              </option>
-            ))}
-          </select>
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
+            <Calendar className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+            <span className="font-medium text-slate-500 text-[11px] hidden xl:inline">Week:</span>
+            <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              className="bg-transparent font-semibold text-slate-800 border-none outline-hidden cursor-pointer text-xs pr-1"
+            >
+              {availableWeeks.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={goToNextWeek}
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-colors cursor-pointer"
+            title="Next Week (Mon - Sun)"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+
+          {/* Real Calendar Date Picker Trigger */}
+          <div className="relative">
+            <input
+              ref={dateInputRef}
+              type="date"
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(e) => {
+                if (e.target.value) {
+                  selectDate(e.target.value);
+                  e.target.value = '';
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (dateInputRef.current) {
+                  if ('showPicker' in HTMLInputElement.prototype) {
+                    try {
+                      dateInputRef.current.showPicker();
+                    } catch {
+                      dateInputRef.current.click();
+                    }
+                  } else {
+                    dateInputRef.current.click();
+                  }
+                }
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-white transition-colors font-medium text-[11px] border border-transparent hover:border-slate-200 cursor-pointer"
+              title="Pick any date from calendar to snap to that Monday - Sunday week"
+            >
+              <CalendarDays className="h-3.5 w-3.5 text-indigo-600" />
+              <span>Calendar</span>
+            </button>
+          </div>
         </div>
 
-        {/* Right Section: AI Assistant, Role Switcher, Profile */}
-        <div className="flex items-center gap-3">
+        {/* Right Section: Demo Role Switcher, AI Assistant, Profile */}
+        <div className="flex items-center gap-2.5">
+          {/* 1-Click Quick Demo Role Switcher */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 rounded-xl px-2.5 py-1 text-xs border border-slate-200">
+            <span className="text-[10px] font-bold uppercase text-slate-400">Demo Role:</span>
+            <select
+              value={currentUser?.email}
+              onChange={async (e) => {
+                if (e.target.value && e.target.value !== currentUser?.email) {
+                  await login(e.target.value, 'password123');
+                }
+              }}
+              className="bg-transparent font-semibold text-slate-800 border-none outline-hidden cursor-pointer text-xs pr-1"
+              title="Switch demo account & role"
+            >
+              <option value="admin@team.com">Admin (System Admin)</option>
+              <option value="alex.rivera@team.com">Manager (Alex Rivera)</option>
+              <option value="sarah.chen@team.com">Member (Sarah Chen)</option>
+              <option value="michael.scott@team.com">Member (Michael Scott - Needs Correction)</option>
+            </select>
+          </div>
+
           {/* AI Summary Trigger */}
           <button
             type="button"

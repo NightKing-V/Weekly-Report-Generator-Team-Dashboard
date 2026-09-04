@@ -37,9 +37,18 @@ class ChatMessageModel(BaseModel):
 class ChatQueryRequest(BaseModel):
     message: str
     weekLabel: Optional[str] = None
+    selectedWeek: Optional[str] = None
+    threadId: Optional[str] = None
+
+    @property
+    def effective_week(self) -> Optional[str]:
+        return self.weekLabel or self.selectedWeek
 
 
 class ChatQueryResponse(BaseModel):
     reply: str
     sourcesCount: int = 0
+    threadId: Optional[str] = None
+    summary: Optional[str] = None
+    responseCount: int = 0
 

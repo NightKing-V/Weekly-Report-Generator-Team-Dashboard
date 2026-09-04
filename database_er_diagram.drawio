@@ -1,0 +1,87 @@
+<mxfile host="app.diagrams.net" modified="2026-09-04T16:55:00.000Z" agent="5.0" version="21.6.8" type="device">
+  <diagram id="mongodb-simplified-er" name="MongoDB Database Schema">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Banner -->
+        <mxCell id="title" value="MongoDB Database Schema — Collections &amp; Document References" style="text;html=1;strokeColor=none;fillColor=#0f172a;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=18;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="60" y="30" width="1180" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ========================================== -->
+        <!-- COLLECTION 1: users                        -->
+        <!-- ========================================== -->
+        <mxCell id="users_coll" value="users&#xa;(Collection)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#2563eb;fontColor=#ffffff;strokeColor=#1d4ed8;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="300" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="users_fields" value="_id: ObjectId (Primary Key)&#xa;id: string (Index, e.g. 'user-1')&#xa;name: string&#xa;email: string (Unique Index)&#xa;role: string ('team_member' | 'manager' | 'admin')&#xa;title: string&#xa;department: string&#xa;avatarUrl: string&#xa;hashedPassword: string&#xa;createdAt: string (ISO 8601)" style="text;strokeColor=none;fillColor=#eff6ff;align=left;verticalAlign=top;spacingLeft=10;spacingRight=10;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontSize=11;fontColor=#1e293b;fontFamily=monospace;" vertex="1" parent="users_coll">
+          <mxGeometry y="30" width="300" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- ========================================== -->
+        <!-- COLLECTION 2: projects                     -->
+        <!-- ========================================== -->
+        <mxCell id="projects_coll" value="projects&#xa;(Collection)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#0d9488;fontColor=#ffffff;strokeColor=#0f766e;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="470" width="300" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="projects_fields" value="_id: ObjectId (Primary Key)&#xa;id: string (Index, e.g. 'proj-1')&#xa;name: string&#xa;code: string (Unique Index, e.g. 'CLT-A')&#xa;description: string&#xa;status: string ('Active' | 'On Hold' | 'Completed')&#xa;color: string (Hex code)&#xa;assignedMemberIds: Array&lt;string&gt; (user.id refs)&#xa;createdAt: string (ISO 8601)" style="text;strokeColor=none;fillColor=#f0fdfa;align=left;verticalAlign=top;spacingLeft=10;spacingRight=10;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontSize=11;fontColor=#1e293b;fontFamily=monospace;" vertex="1" parent="projects_coll">
+          <mxGeometry y="30" width="300" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- ========================================== -->
+        <!-- COLLECTION 3: reports                      -->
+        <!-- ========================================== -->
+        <mxCell id="reports_coll" value="reports&#xa;(Collection)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#4f46e5;fontColor=#ffffff;strokeColor=#4338ca;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="110" width="380" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="reports_fields" value="_id: ObjectId (Primary Key)&#xa;id: string (Index, e.g. 'rep-sarah-w36')&#xa;userId: string (Ref -&gt; users.id)&#xa;userName: string (Denormalized)&#xa;userTitle: string&#xa;userDepartment: string&#xa;projectId: string (Ref -&gt; projects.id)&#xa;projectName: string (Denormalized)&#xa;weekStartDate: string ('YYYY-MM-DD')&#xa;weekEndDate: string ('YYYY-MM-DD')&#xa;weekLabel: string (Index, e.g. 'Week 36 (Aug 31 - Sep 06, 2026)')&#xa;status: string ('Draft' | 'Submitted' | 'Needs Correction' | 'Approved')&#xa;currentVersion: number&#xa;latestManagerComment: string&#xa;submittedAt: string (ISO 8601)&#xa;reviewedAt: string (ISO 8601)&#xa;createdAt: string (ISO 8601)&#xa;updatedAt: string (ISO 8601)&#xa;----------------------------------------------------&#xa;[Embedded Subdocuments &amp; Arrays]:&#xa;tasksCompleted: Array&lt;Object&gt; (Task, hours, deliverable)&#xa;tasksPlannedNextWeek: Array&lt;Object&gt; (Task, est. hours)&#xa;blockers: Array&lt;Object&gt; (Description, isKeyIssue, impact)&#xa;achievements: Array&lt;Object&gt; (Description, isKeyAchievement)&#xa;hoursWorked: Object (dev, testing, meetings, doc, other)&#xa;versions: Array&lt;Object&gt; (Version snapshots &amp; diffs)&#xa;reviewHistory: Array&lt;Object&gt; (Manager comments &amp; actions)" style="text;strokeColor=none;fillColor=#eef2ff;align=left;verticalAlign=top;spacingLeft=10;spacingRight=10;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontSize=11;fontColor=#1e293b;fontFamily=monospace;" vertex="1" parent="reports_coll">
+          <mxGeometry y="30" width="380" height="470" as="geometry" />
+        </mxCell>
+
+        <!-- ========================================== -->
+        <!-- COLLECTION 4: activities                   -->
+        <!-- ========================================== -->
+        <mxCell id="activities_coll" value="activities&#xa;(Collection - Audit Feed)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d97706;fontColor=#ffffff;strokeColor=#b45309;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="670" width="380" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="activities_fields" value="_id: ObjectId (Primary Key)&#xa;id: string (e.g. 'act-1')&#xa;type: string ('submitted' | 'approved' | 'correction_requested')&#xa;actorName: string&#xa;actorRole: string&#xa;reportId: string (Ref -&gt; reports.id)&#xa;weekLabel: string&#xa;message: string (Audit description)&#xa;timestamp: string (ISO 8601)" style="text;strokeColor=none;fillColor=#fffbeb;align=left;verticalAlign=top;spacingLeft=10;spacingRight=10;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontSize=11;fontColor=#1e293b;fontFamily=monospace;" vertex="1" parent="activities_coll">
+          <mxGeometry y="30" width="380" height="190" as="geometry" />
+        </mxCell>
+
+        <!-- ========================================== -->
+        <!-- RELATIONSHIPS & REFERENCES                 -->
+        <!-- ========================================== -->
+
+        <!-- 1. users -> reports (1:N) -->
+        <mxCell id="rel_users_reports" value="1 : N&#xa;reports.userId = users.id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.35;exitDx=0;exitDy=0;strokeColor=#2563eb;strokeWidth=2;fontSize=11;fontColor=#1d4ed8;fontStyle=1;" edge="1" parent="1" source="users_coll" target="reports_coll">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 2. projects -> reports (1:N) -->
+        <mxCell id="rel_projects_reports" value="1 : N&#xa;reports.projectId = projects.id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;exitX=1;exitY=0.4;exitDx=0;exitDy=0;strokeColor=#0d9488;strokeWidth=2;fontSize=11;fontColor=#0f766e;fontStyle=1;" edge="1" parent="1" source="projects_coll" target="reports_coll">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 3. users <-> projects (N:M Assignment) -->
+        <mxCell id="rel_users_projects" value="N : M&#xa;assignedMemberIds contains users.id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;strokeColor=#64748b;strokeWidth=2;fontSize=11;fontColor=#475569;fontStyle=2;dashed=1;" edge="1" parent="1" source="users_coll" target="projects_coll">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 4. reports -> activities (1:N) -->
+        <mxCell id="rel_reports_activities" value="1 : N&#xa;activities.reportId = reports.id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;strokeColor=#d97706;strokeWidth=2;fontSize=11;fontColor=#b45309;fontStyle=1;" edge="1" parent="1" source="reports_coll" target="activities_coll">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ========================================== -->
+        <!-- INFO / EXPLANATION PANEL                   -->
+        <!-- ========================================== -->
+        <mxCell id="info_panel" value="MongoDB Schema Design Summary:&#xa;&#xa;1. Four Top-Level Collections:&#xa;   • users: Workspace accounts, roles, and hashed credentials.&#xa;   • projects: Project categories, codes, and assigned member IDs.&#xa;   • reports: Core collection holding weekly submissions. Tasks, deliverables, blockers, and version snapshots are embedded directly inside the document.&#xa;   • activities: Real-time audit log of report submissions and reviews.&#xa;&#xa;2. Embedding vs Referencing:&#xa;   • Referenced: userId, projectId, and reportId use string IDs for cross-collection queries.&#xa;   • Embedded: Tasks, blockers, hours worked, versions, and review history are stored as nested arrays/objects in reports for fast single-document reads and atomic writes.&#xa;   • Denormalized: userName and projectName are stored inside reports to eliminate expensive lookup stages." style="text;html=1;strokeColor=#cbd5e1;fillColor=#f8fafc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=11;fontColor=#334155;spacing=12;lineHeight=1.4;" vertex="1" parent="1">
+          <mxGeometry x="920" y="110" width="320" height="420" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

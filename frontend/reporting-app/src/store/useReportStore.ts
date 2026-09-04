@@ -7,6 +7,13 @@ import type {
 } from '../types';
 import { apiClient } from '../services/api';
 import { useAuthStore } from './useAuthStore';
+import {
+  getIsoWeek,
+  getRecentWeeks,
+  getAdjacentWeek,
+  parseDateToWeek,
+  type WeekInfo,
+} from '../utils/dateUtils';
 
 interface ReportState {
   reports: WeeklyReport[];
@@ -14,11 +21,16 @@ interface ReportState {
   activities: ActivityFeedItem[];
   selectedWeek: string;
   availableWeeks: string[];
+  currentWeekInfo: WeekInfo;
   loading: boolean;
 
   setSelectedWeek: (week: string) => void;
+  selectDate: (date: string | Date) => void;
+  goToPreviousWeek: () => void;
+  goToNextWeek: () => void;
+
   fetchReports: () => Promise<WeeklyReport[]>;
-  fetchProjects: () => Promise<ProjectCategory[]>;
+  fetchProjects: (force?: boolean) => Promise<ProjectCategory[]>;
   fetchActivities: () => Promise<ActivityFeedItem[]>;
 
   saveDraft: (reportData: Partial<WeeklyReport>) => Promise<WeeklyReport>;
@@ -36,19 +48,51 @@ interface ReportState {
   resetToInitialData: () => void;
 }
 
+const initialWeek = getIsoWeek();
+const recentWeeks = getRecentWeeks(12);
+
 export const useReportStore = create<ReportState>((set, get) => ({
   reports: [],
   projects: [],
   activities: [],
-  selectedWeek: 'Week 36 (Aug 31 - Sep 06, 2026)',
-  availableWeeks: [
-    'Week 36 (Aug 31 - Sep 06, 2026)',
-    'Week 35 (Aug 24 - Aug 30, 2026)',
-    'Week 34 (Aug 17 - Aug 23, 2026)',
-  ],
+  selectedWeek: initialWeek.weekLabel,
+  availableWeeks: recentWeeks.map((w) => w.weekLabel),
+  currentWeekInfo: initialWeek,
   loading: false,
 
-  setSelectedWeek: (week) => set({ selectedWeek: week }),
+  setSelectedWeek: (week) => {
+    const weekInfo = getIsoWeek(week);
+    set((state) => {
+      const exists = state.availableWeeks.includes(week);
+      return {
+        selectedWeek: week,
+        currentWeekInfo: weekInfo,
+        availableWeeks: exists ? state.availableWeeks : [week, ...state.availableWeeks],
+      };
+    });
+  },
+
+  selectDate: (dateInput) => {
+    const weekInfo = parseDateToWeek(dateInput);
+    set((state) => {
+      const exists = state.availableWeeks.includes(weekInfo.weekLabel);
+      return {
+        selectedWeek: weekInfo.weekLabel,
+        currentWeekInfo: weekInfo,
+        availableWeeks: exists ? state.availableWeeks : [weekInfo.weekLabel, ...state.availableWeeks],
+      };
+    });
+  },
+
+  goToPreviousWeek: () => {
+    const prev = getAdjacentWeek(get().selectedWeek, -1);
+    get().selectDate(prev.weekStartDate);
+  },
+
+  goToNextWeek: () => {
+    const next = getAdjacentWeek(get().selectedWeek, 1);
+    get().selectDate(next.weekStartDate);
+  },
 
   fetchReports: async () => {
     set({ loading: true });
@@ -62,7 +106,10 @@ export const useReportStore = create<ReportState>((set, get) => ({
     }
   },
 
-  fetchProjects: async () => {
+  fetchProjects: async (force = false) => {
+    if (!force && get().projects.length > 0) {
+      return get().projects;
+    }
     const projects = await apiClient.projects.getAll();
     set({ projects });
     return projects;
@@ -78,6 +125,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
     const currentUser = useAuthStore.getState().currentUser;
     if (!currentUser) throw new Error('User must be logged in to save draft');
 
+    const effectiveWeek = reportData.weekLabel || get().selectedWeek;
+    const weekInfo = getIsoWeek(reportData.weekStartDate || effectiveWeek);
+
     const project = get().projects.find((p) => p.id === reportData.projectId);
     const enrichedData = {
       ...reportData,
@@ -86,6 +136,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
       userTitle: currentUser.title,
       userDepartment: currentUser.department,
       projectName: project ? project.name : 'General Project',
+      weekLabel: effectiveWeek,
+      weekStartDate: weekInfo.weekStartDate,
+      weekEndDate: weekInfo.weekEndDate,
     };
 
     const saved = await apiClient.reports.saveDraft(enrichedData);
@@ -103,6 +156,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
     const currentUser = useAuthStore.getState().currentUser;
     if (!currentUser) throw new Error('User must be logged in to submit report');
 
+    const effectiveWeek = reportData.weekLabel || get().selectedWeek;
+    const weekInfo = getIsoWeek(reportData.weekStartDate || effectiveWeek);
+
     const project = get().projects.find((p) => p.id === reportData.projectId);
     const enrichedData = {
       ...reportData,
@@ -111,7 +167,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
       userTitle: currentUser.title,
       userDepartment: currentUser.department,
       projectName: project ? project.name : 'General Project',
-      weekLabel: reportData.weekLabel || get().selectedWeek,
+      weekLabel: effectiveWeek,
+      weekStartDate: weekInfo.weekStartDate,
+      weekEndDate: weekInfo.weekEndDate,
     };
 
     const submitted = await apiClient.reports.submit(enrichedData);

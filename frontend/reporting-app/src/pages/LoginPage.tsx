@@ -6,6 +6,7 @@ import {
   Lock,
   Mail,
   User as UserIcon,
+  Shield,
 } from 'lucide-react';
 
 import { useFetch } from '../hooks/useFetch';
@@ -237,12 +238,29 @@ export const LoginPage: React.FC = () => {
             <div className="space-y-1.5">
               <button
                 type="button"
+                onClick={() => handleQuickLogin('admin@team.com')}
+                className="w-full flex items-center justify-between p-2 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100/70 transition-colors text-left cursor-pointer"
+              >
+                <div>
+                  <span className="text-xs font-bold text-rose-950 flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5 text-rose-600" />
+                    System Admin
+                  </span>
+                  <span className="text-[10px] text-rose-700">Administrator (Full Access)</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-200 text-rose-800">
+                  Admin
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleQuickLogin('alex.rivera@team.com')}
-                className="w-full flex items-center justify-between p-2 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/60 transition-colors text-left"
+                className="w-full flex items-center justify-between p-2 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/60 transition-colors text-left cursor-pointer"
               >
                 <div>
                   <span className="text-xs font-bold text-purple-950 block">Alex Rivera</span>
-                  <span className="text-[10px] text-purple-700">Manager / Lead (Full Access)</span>
+                  <span className="text-[10px] text-purple-700">Manager / Lead </span>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-200 text-purple-800">
                   Manager

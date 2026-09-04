@@ -220,10 +220,16 @@ export const apiClient = {
 
   // AI Chat Assistant API
   chat: {
-    ask: (message: string, selectedWeek?: string) =>
-      request<{ reply: string }>('/api/chat/ask', {
+    ask: (message: string, selectedWeek?: string, threadId?: string) =>
+      request<{
+        reply: string;
+        sourcesCount: number;
+        threadId?: string;
+        summary?: string;
+        responseCount?: number;
+      }>('/api/chat/ask', {
         method: 'POST',
-        body: JSON.stringify({ message, selectedWeek }),
+        body: JSON.stringify({ message, selectedWeek, threadId }),
       }),
   },
 };

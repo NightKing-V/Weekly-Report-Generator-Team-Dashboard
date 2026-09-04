@@ -11,12 +11,18 @@ import {
   Users,
   BarChart3,
   AlertCircle,
+  X,
 } from 'lucide-react';
 
 import type { NavigationTab, SidebarProps } from '../../props';
 export type { NavigationTab, SidebarProps };
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  currentTab,
+  onNavigate,
+  isMobileOpen = false,
+  onCloseMobile,
+}) => {
   const { currentUser } = useAuth();
   const { reports } = useReports();
 
@@ -25,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
   const isAdmin = currentUser?.role === 'admin';
+  const isReviewOrReportTab = currentTab === 'manager-review' || currentTab === 'personal-report';
 
   useEffect(() => {
     let isMounted = true;
@@ -49,7 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
     return () => {
       isMounted = false;
     };
-  }, [currentUser, isManager, currentTab]);
+  }, [currentUser, isManager, isReviewOrReportTab]);
 
   if (!currentUser) return null;
 
@@ -136,13 +143,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
       },
     ];
 
+  const handleItemClick = (tabId: NavigationTab) => {
+    onNavigate(tabId);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside className="w-64 shrink-0 border-r border-slate-200 bg-white min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between hidden md:flex">
-      <div className="space-y-6">
-        <div>
-          <p className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-            {isManager ? 'Management Hub' : 'Member Workspace'}
-          </p>
+    <>
+      {/* Mobile Drawer Overlay Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 md:hidden"
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Fixed Left Sidebar */}
+      <aside
+        className={`fixed top-16 left-0 bottom-0 w-64 border-r border-slate-200 bg-white p-4 flex flex-col justify-between z-30 overflow-y-auto transition-transform duration-200 ease-in-out md:translate-x-0 ${
+          isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:flex'
+        }`}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <p className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              {isManager ? 'Management Hub' : 'Member Workspace'}
+            </p>
+            {isMobileOpen && (
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className="md:hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                title="Close Navigation"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -151,8 +191,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left font-medium transition-all ${isActive
+                  onClick={() => handleItemClick(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left font-medium transition-all cursor-pointer ${isActive
                     ? 'bg-indigo-50 text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
@@ -178,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
         </div>
 
         {/* Workflow Quick Helper Banner */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 mt-4">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 mb-1">
             <BarChart3 className="h-4 w-4 text-indigo-600" />
             <span>Review Cycle Status</span>
@@ -189,12 +229,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onNavigate }) => {
               : 'Submit weekly report before Friday. Reports needing changes can be edited & resubmitted.'}
           </p>
         </div>
-      </div>
 
-      <div className="pt-4 border-t border-slate-100 text-center">
-        <p className="text-[11px] text-slate-400">Weekly Report Generator v1.0</p>
-        <p className="text-[10px] text-slate-400">Role: {currentUser.role.replace('_', ' ')}</p>
-      </div>
-    </aside>
+        <div className="pt-4 border-t border-slate-100 text-center mt-4">
+          <p className="text-[11px] text-slate-400">Weekly Report Generator v1.0</p>
+          <p className="text-[10px] text-slate-400">Role: {currentUser.role.replace('_', ' ')}</p>
+        </div>
+      </aside>
+    </>
   );
 };

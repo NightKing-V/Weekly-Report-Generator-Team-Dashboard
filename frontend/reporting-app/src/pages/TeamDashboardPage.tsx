@@ -106,8 +106,10 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
     };
   }, [selectedWeek, refreshKey]);
 
-  // Load paginated table reports on-demand
+  // Load paginated table reports on-demand (only when active tab is 'reports')
   useEffect(() => {
+    if (dashboardTab !== 'reports') return;
+
     let isCancelled = false;
     const loadTableData = async () => {
       setTableLoading(true);
@@ -136,7 +138,7 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [selectedWeek, selectedMemberId, selectedProjectId, selectedStatus, searchQuery, tablePage, tablePageSize, refreshKey]);
+  }, [dashboardTab, selectedWeek, selectedMemberId, selectedProjectId, selectedStatus, searchQuery, tablePage, tablePageSize, refreshKey]);
 
   const handleApprove = async (id: string, comment?: string) => {
     await execute(
@@ -211,7 +213,7 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Reports ({totalTableItems})
+            All Reports ({totalTableItems || weekReports.length})
           </button>
           <button
             type="button"

@@ -36,7 +36,7 @@ interface AuthState {
   users: User[];
   loading: boolean;
 
-  fetchUsers: () => Promise<User[]>;
+  fetchUsers: (force?: boolean) => Promise<User[]>;
   login: (email: string, password?: string, role?: UserRole) => Promise<boolean>;
   register: (
     name: string,
@@ -60,7 +60,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   users: [],
   loading: false,
 
-  fetchUsers: async () => {
+  fetchUsers: async (force = false) => {
+    if (!force && get().users.length > 0) {
+      return get().users;
+    }
     set({ loading: true });
     try {
       const users = await apiClient.users.getAll();

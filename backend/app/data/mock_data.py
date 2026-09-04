@@ -10,6 +10,17 @@ DEFAULT_HASHED_PASSWORD = hash_password("password123")
 
 INITIAL_USERS = [
     {
+        "id": "user-admin",
+        "name": "System Admin",
+        "email": "admin@team.com",
+        "role": "admin",
+        "title": "System Administrator",
+        "department": "IT & Security",
+        "avatarUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop&crop=face",
+        "hashedPassword": DEFAULT_HASHED_PASSWORD,
+        "createdAt": "2026-01-01T00:00:00Z",
+    },
+    {
         "id": "user-1",
         "name": "Alex Rivera",
         "email": "alex.rivera@team.com",

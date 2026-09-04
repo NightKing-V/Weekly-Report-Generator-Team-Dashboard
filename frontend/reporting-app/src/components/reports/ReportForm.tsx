@@ -9,6 +9,7 @@ import type {
   PriorityLevel,
 } from '../../types';
 import { useReports } from '../../context/ReportContext';
+import { getIsoWeek } from '../../utils/dateUtils';
 import { TaskTable } from './TaskTable';
 import { HoursBreakdown } from './HoursBreakdown';
 import {
@@ -37,7 +38,8 @@ export const ReportForm: React.FC<ReportFormProps> = ({
   const { projects, selectedWeek } = useReports();
 
   // Fixed fields according to Section 2:
-  const [weekLabel, setWeekLabel] = useState(initialReport?.weekLabel || selectedWeek);
+  const activeReportingWeek = initialReport?.weekLabel || selectedWeek;
+  const reportingWeekInfo = getIsoWeek(initialReport?.weekStartDate || activeReportingWeek);
   const [projectId, setProjectId] = useState(
     initialReport?.projectId || (projects[0] ? projects[0].id : '')
   );
@@ -182,9 +184,9 @@ export const ReportForm: React.FC<ReportFormProps> = ({
 
   const gatherReportData = (): Partial<WeeklyReport> => ({
     id: initialReport?.id,
-    weekLabel,
-    weekStartDate: initialReport?.weekStartDate || new Date().toISOString().slice(0, 10),
-    weekEndDate: initialReport?.weekEndDate || new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10),
+    weekLabel: activeReportingWeek,
+    weekStartDate: reportingWeekInfo.weekStartDate,
+    weekEndDate: reportingWeekInfo.weekEndDate,
     projectId,
     tasksCompleted: tasksCompleted.filter((t) => t.taskName.trim().length > 0),
     tasksPlannedNextWeek: tasksPlanned.filter((t) => t.taskName.trim().length > 0),
@@ -263,19 +265,27 @@ export const ReportForm: React.FC<ReportFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Week Label */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" /> Reporting Week
-            </label>
-            <input
-              type="text"
-              value={weekLabel}
-              onChange={(e) => setWeekLabel(e.target.value)}
-              placeholder="e.g. Week 36 (Aug 31 - Sep 06, 2026)"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-900 focus:ring-1 focus:ring-indigo-500"
-              required
-            />
+          {/* Reporting Week Details (Auto-selected from Active Week) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-indigo-600" /> Reporting Week
+              </label>
+              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                Auto-Selected (Mon - Sun)
+              </span>
+            </div>
+            <div className="px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/80 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-slate-900">{reportingWeekInfo.weekLabel}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Cycle: {reportingWeekInfo.weekStartDate} (Mon) → {reportingWeekInfo.weekEndDate} (Sun)
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200/80">
+                Week {reportingWeekInfo.weekNumber}
+              </span>
+            </div>
           </div>
 
           {/* Project or Category Tag */}

@@ -43,6 +43,30 @@ export const ManagerReviewPage: React.FC<ManagerReviewPageProps> = ({ onOpenRepo
   const currentPage = activeTab === 'pending' ? pendingPage : reviewedPage;
   const setCurrentPage = activeTab === 'pending' ? setPendingPage : setReviewedPage;
 
+  // Load global counts only on mount or when reports are approved / rejected
+  useEffect(() => {
+    let isCancelled = false;
+    const loadCounts = async () => {
+      try {
+        const [pendingRes, reviewedRes] = await Promise.all([
+          apiClient.reports.getPaginated({ status: 'Submitted', pageSize: 1 }),
+          apiClient.reports.getPaginated({ status: 'Approved,Needs Correction', pageSize: 1 }),
+        ]);
+        if (!isCancelled) {
+          setPendingCount(pendingRes.total);
+          setReviewedCount(reviewedRes.total);
+        }
+      } catch (err) {
+        console.error('Failed to load review counts:', err);
+      }
+    };
+    loadCounts();
+    return () => {
+      isCancelled = true;
+    };
+  }, [refreshTrigger]);
+
+  // Load paginated list for the active tab
   useEffect(() => {
     let isCancelled = false;
     const loadData = async () => {
@@ -51,23 +75,22 @@ export const ManagerReviewPage: React.FC<ManagerReviewPageProps> = ({ onOpenRepo
         const statusParam = activeTab === 'pending' ? 'Submitted' : 'Approved,Needs Correction';
         const page = activeTab === 'pending' ? pendingPage : reviewedPage;
 
-        const [listRes, pendingRes, reviewedRes] = await Promise.all([
-          apiClient.reports.getPaginated({
-            status: statusParam,
-            search: searchQuery.trim() || undefined,
-            page,
-            pageSize,
-          }),
-          apiClient.reports.getPaginated({ status: 'Submitted', pageSize: 1 }),
-          apiClient.reports.getPaginated({ status: 'Approved,Needs Correction', pageSize: 1 }),
-        ]);
+        const listRes = await apiClient.reports.getPaginated({
+          status: statusParam,
+          search: searchQuery.trim() || undefined,
+          page,
+          pageSize,
+        });
 
         if (!isCancelled) {
           setReports(listRes.items);
           setTotalItems(listRes.total);
           setTotalPages(listRes.totalPages || 1);
-          setPendingCount(pendingRes.total);
-          setReviewedCount(reviewedRes.total);
+          // If no search filter is active, update the corresponding badge count directly
+          if (!searchQuery.trim()) {
+            if (activeTab === 'pending') setPendingCount(listRes.total);
+            else setReviewedCount(listRes.total);
+          }
         }
       } catch (err) {
         console.error('Failed to load manager review reports:', err);

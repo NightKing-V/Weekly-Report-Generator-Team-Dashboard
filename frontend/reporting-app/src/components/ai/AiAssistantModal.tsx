@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useReports } from '../../context/ReportContext';
 import { apiClient } from '../../services/api';
-import { Sparkles, Send, Bot, User as UserIcon, RefreshCw, X, Minus } from 'lucide-react';
+import { Sparkles, Send, Bot, User as UserIcon, RefreshCw, X, Minus, RotateCcw, Layers } from 'lucide-react';
 import type { AiAssistantPanelProps } from '../../props';
 
 interface ChatMessage {
@@ -9,25 +9,31 @@ interface ChatMessage {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
+  sourcesCount?: number;
+  responseCount?: number;
 }
 
 export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onClose }) => {
   const { selectedWeek } = useReports();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const threadIdRef = useRef<string>(crypto.randomUUID());
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome-msg',
       sender: 'assistant',
-      text: `Hello! I'm your AI Team Assistant connected to the backend reporting API. Ask me to generate an executive summary for **${selectedWeek}**, identify unresolved blockers, or check progress across team members.`,
+      text: `Hello! I'm your AI Team Assistant connected to the backend reporting API via LangGraph. Ask me to generate an executive summary for **${selectedWeek}**, identify unresolved blockers, or check progress across team members.`,
       timestamp: new Date().toISOString(),
     },
   ]);
 
   const [inputQuery, setInputQuery] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [rollingSummary, setRollingSummary] = useState<string | null>(null);
+  const [responseCount, setResponseCount] = useState<number>(0);
+  const [showSummaryDetails, setShowSummaryDetails] = useState(true);
 
-  // Auto-scroll to bottom of chat history on new messages
+  // Auto-scroll to bottom of chat history on new messages or thinking state
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,9 +47,23 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
     'Summarize team workload and hours distribution',
   ];
 
+  const handleResetChat = () => {
+    threadIdRef.current = crypto.randomUUID();
+    setRollingSummary(null);
+    setResponseCount(0);
+    setMessages([
+      {
+        id: `welcome-${crypto.randomUUID()}`,
+        sender: 'assistant',
+        text: `New conversation started for **${selectedWeek}**. Ask me about reports, blockers, or progress.`,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  };
+
   const handleSend = async (textToSend?: string) => {
     const text = textToSend || inputQuery;
-    if (!text.trim()) return;
+    if (!text.trim() || isThinking) return;
 
     const userMessage: ChatMessage = {
       id: `msg-${crypto.randomUUID()}`,
@@ -57,12 +77,21 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
     setIsThinking(true);
 
     try {
-      const response = await apiClient.chat.ask(text.trim(), selectedWeek);
+      const response = await apiClient.chat.ask(text.trim(), selectedWeek, threadIdRef.current);
+      if (response.summary) {
+        setRollingSummary(response.summary);
+      }
+      if (response.responseCount !== undefined) {
+        setResponseCount(response.responseCount);
+      }
+
       const botMessage: ChatMessage = {
         id: `msg-${crypto.randomUUID()}`,
         sender: 'assistant',
         text: response.reply,
         timestamp: new Date().toISOString(),
+        sourcesCount: response.sourcesCount,
+        responseCount: response.responseCount,
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch {
@@ -78,13 +107,13 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <div
       role="complementary"
       aria-label="AI Team Assistant"
-      className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-5.5rem)] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden backdrop-blur-md animate-in fade-in slide-in-from-bottom-6 duration-200"
+      className={`fixed bottom-6 right-6 z-50 w-[440px] max-w-[calc(100vw-2rem)] h-[620px] max-h-[calc(100vh-5.5rem)] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden backdrop-blur-md animate-in fade-in slide-in-from-bottom-6 duration-200 transition-all ${
+        !isOpen ? 'hidden' : ''
+      }`}
     >
       {/* Header */}
       <div className="px-4 py-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white flex items-center justify-between shrink-0 shadow-xs">
@@ -100,6 +129,14 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
               <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 shrink-0">
                 Online
               </span>
+              {responseCount > 0 && (
+                <span
+                  className="text-[9px] font-medium px-1.5 py-0.2 rounded-full bg-white/15 text-indigo-100 border border-white/20 shrink-0"
+                  title="Total responses in this in-memory session. Summarizer triggers every 5 responses."
+                >
+                  Turn {responseCount}
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-indigo-200 truncate max-w-[210px]">
               Analyzing reports for {selectedWeek}
@@ -108,6 +145,14 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleResetChat}
+            className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            title="Reset Conversation (Start New Session)"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -126,6 +171,30 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
           </button>
         </div>
       </div>
+
+      {/* Rolling Summary Card (every 5 responses) */}
+      {rollingSummary && (
+        <div className="px-3 pt-2.5 pb-1.5 bg-indigo-50/70 border-b border-indigo-150/80 shrink-0">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-indigo-900 mb-1">
+            <span className="flex items-center gap-1">
+              <Layers className="h-3 w-3 text-indigo-600" />
+              Rolling Summary (5-Turn Checkpoint)
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowSummaryDetails((prev) => !prev)}
+              className="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer underline"
+            >
+              {showSummaryDetails ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          {showSummaryDetails && (
+            <p className="text-[11px] text-slate-700 italic leading-relaxed line-clamp-3 hover:line-clamp-none transition-all">
+              {rollingSummary}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Suggested Prompt Chips */}
       <div className="px-3 py-2 bg-slate-50/90 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto shrink-0 scrollbar-thin">
@@ -165,14 +234,22 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
               )}
             </div>
 
-            <div
-              className={`p-3.5 rounded-2xl text-xs max-w-[85%] leading-relaxed ${
-                m.sender === 'user'
-                  ? 'bg-indigo-600 text-white rounded-tr-xs shadow-xs'
-                  : 'bg-white text-slate-800 rounded-tl-xs whitespace-pre-line border border-slate-200/80 shadow-xs'
-              }`}
-            >
-              {m.text}
+            <div className="max-w-[85%] space-y-1">
+              <div
+                className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
+                  m.sender === 'user'
+                    ? 'bg-indigo-600 text-white rounded-tr-xs shadow-xs'
+                    : 'bg-white text-slate-800 rounded-tl-xs whitespace-pre-line border border-slate-200/80 shadow-xs'
+                }`}
+              >
+                {m.text}
+              </div>
+
+              {m.sourcesCount !== undefined && m.sourcesCount > 0 && (
+                <div className="text-[10px] text-slate-400 px-1 flex items-center gap-1">
+                  <span>📊 {m.sourcesCount} report{m.sourcesCount > 1 ? 's' : ''} retrieved</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -183,7 +260,7 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
             </div>
             <div className="p-3 bg-white rounded-2xl text-xs text-slate-500 italic border border-slate-200/80 shadow-xs">
-              Querying backend intelligence...
+              Querying team intelligence via LangGraph & Groq...
             </div>
           </div>
         )}

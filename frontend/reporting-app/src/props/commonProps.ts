@@ -45,10 +45,13 @@ export interface ModalProps {
 
 export interface NavbarProps {
   onOpenAiAssistant: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export interface SidebarProps {
   currentTab: NavigationTab;
   onNavigate: (tab: NavigationTab) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
