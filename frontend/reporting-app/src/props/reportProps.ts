@@ -35,6 +35,7 @@ export interface ReviewActionModalProps {
   reportId: string;
   reportAuthor: string;
   weekLabel: string;
+  initialAction?: 'approve' | 'request_changes';
   onApprove: (reportId: string, comment?: string) => void;
   onRequestChanges: (reportId: string, comment: string) => void;
 }

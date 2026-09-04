@@ -19,14 +19,14 @@ class ReportRepository:
     # -------------------------------------------------------------
     # Report Operations
     # -------------------------------------------------------------
-    async def get_reports(
+    def _build_reports_query(
         self,
         week_label: Optional[str] = None,
         user_id: Optional[str] = None,
         project_id: Optional[str] = None,
         status: Optional[str] = None,
-    ) -> List[dict]:
-        """Fetch reports with optional filtering by week, user, project, or status."""
+        search: Optional[str] = None,
+    ) -> Dict[str, Any]:
         query: Dict[str, Any] = {}
         if week_label and week_label != "all":
             query["weekLabel"] = week_label
@@ -35,10 +35,67 @@ class ReportRepository:
         if project_id and project_id != "all":
             query["projectId"] = project_id
         if status and status != "All":
-            query["status"] = status
+            if "," in status:
+                query["status"] = {"$in": [s.strip() for s in status.split(",")]}
+            else:
+                query["status"] = status
+        if search and search.strip():
+            regex = {"$regex": search.strip(), "$options": "i"}
+            query["$or"] = [
+                {"userName": regex},
+                {"projectName": regex},
+                {"tasksCompleted.taskName": regex},
+                {"blockers.description": regex},
+                {"notesOrLinks": regex},
+            ]
+        return query
 
+    async def get_reports(
+        self,
+        week_label: Optional[str] = None,
+        user_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+        limit: int = 200,
+    ) -> List[dict]:
+        """Fetch reports with optional filtering by week, user, project, status, or search query."""
+        query = self._build_reports_query(week_label, user_id, project_id, status, search)
         cursor = self.reports_collection.find(query, {"_id": 0}).sort("submittedAt", -1)
-        return await cursor.to_list(length=200)
+        return await cursor.to_list(length=limit)
+
+    async def get_reports_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        week_label: Optional[str] = None,
+        user_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Fetch paginated reports along with total counts and pagination metadata."""
+        import math
+        query = self._build_reports_query(week_label, user_id, project_id, status, search)
+        total = await self.reports_collection.count_documents(query)
+        skip = (page - 1) * page_size
+
+        cursor = (
+            self.reports_collection.find(query, {"_id": 0})
+            .sort("submittedAt", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+        items = await cursor.to_list(length=page_size)
+        total_pages = math.ceil(total / page_size) if total > 0 else 1
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+            "totalPages": total_pages,
+        }
 
     async def get_report_by_id(self, report_id: str) -> Optional[dict]:
         """Fetch a single report by its ID."""

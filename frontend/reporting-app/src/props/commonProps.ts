@@ -7,6 +7,7 @@ export type NavigationTab =
   | 'report-detail'
   | 'team-dashboard'
   | 'manager-review'
+  | 'team'
   | 'member-profile'
   | 'projects'
   | 'users';

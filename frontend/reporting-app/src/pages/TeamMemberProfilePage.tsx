@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useReports } from '../context/ReportContext';
+import { apiClient } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { Pagination } from '../components/common/Pagination';
 import { formatDate } from '../utils/formatters';
+import type { WeeklyReport } from '../types';
 import {
   ArrowLeft,
   Mail,
@@ -17,13 +19,36 @@ export const TeamMemberProfilePage: React.FC<TeamMemberProfilePageProps> = ({
   onBack,
   onOpenReport,
 }) => {
-  const { users } = useAuth();
-  const { reports } = useReports();
+  const { users, fetchUsers } = useAuth();
+  const [memberReports, setMemberReports] = useState<WeeklyReport[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const loadMemberReports = async () => {
+      try {
+        const res = await apiClient.reports.getAll({ userId: memberId });
+        if (!isCancelled) {
+          setMemberReports(
+            res.sort((a, b) => b.weekStartDate.localeCompare(a.weekStartDate))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to load member reports:', err);
+      }
+    };
+    loadMemberReports();
+    return () => {
+      isCancelled = true;
+    };
+  }, [memberId]);
 
   const member = users.find((u) => u.id === memberId);
-  const memberReports = reports
-    .filter((r) => r.userId === memberId)
-    .sort((a, b) => b.weekStartDate.localeCompare(a.weekStartDate));
 
   if (!member) {
     return (
@@ -157,48 +182,65 @@ export const TeamMemberProfilePage: React.FC<TeamMemberProfilePageProps> = ({
               No historical reports recorded for this team member yet.
             </p>
           ) : (
-            memberReports.map((report) => {
-              const hours =
-                (report.hoursWorked?.development || 0) +
-                (report.hoursWorked?.testing || 0) +
-                (report.hoursWorked?.meetings || 0) +
-                (report.hoursWorked?.documentation || 0);
+            <>
+              {memberReports
+                .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                .map((report) => {
+                  const hours =
+                    (report.hoursWorked?.development || 0) +
+                    (report.hoursWorked?.testing || 0) +
+                    (report.hoursWorked?.meetings || 0) +
+                    (report.hoursWorked?.documentation || 0);
 
-              return (
-                <div
-                  key={report.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-slate-50/50 transition-all"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">{report.weekLabel}</span>
-                      <StatusBadge status={report.status} size="sm" />
-                    </div>
-                    <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                      <Folder className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{report.projectName}</span>
-                      <span>•</span>
-                      <span>{report.tasksCompleted?.length || 0} tasks delivered</span>
-                      <span>•</span>
-                      <span>{hours} hrs logged</span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-[11px] text-slate-400">
-                      {report.submittedAt ? formatDate(report.submittedAt) : 'Draft'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onOpenReport(report.id)}
-                      className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
+                  return (
+                    <div
+                      key={report.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-slate-50/50 transition-all"
                     >
-                      Open Report
-                    </button>
-                  </div>
-                </div>
-              );
-            })
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">{report.weekLabel}</span>
+                          <StatusBadge status={report.status} size="sm" />
+                        </div>
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                          <Folder className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{report.projectName}</span>
+                          <span>•</span>
+                          <span>{report.tasksCompleted?.length || 0} tasks delivered</span>
+                          <span>•</span>
+                          <span>{hours} hrs logged</span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] text-slate-400">
+                          {report.submittedAt ? formatDate(report.submittedAt) : 'Draft'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onOpenReport(report.id)}
+                          className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
+                        >
+                          Open Report
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.max(1, Math.ceil(memberReports.length / pageSize))}
+                totalItems={memberReports.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                pageSizeOptions={[5, 10, 20]}
+              />
+            </>
           )}
         </div>
       </div>

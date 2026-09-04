@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useReports } from '../context/ReportContext';
+import { apiClient } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
-import type { ReportStatus } from '../types';
+import { Pagination } from '../components/common/Pagination';
+import type { ReportStatus, WeeklyReport } from '../types';
 import { formatDate } from '../utils/formatters';
 import {
   History,
@@ -11,6 +12,8 @@ import {
   AlertTriangle,
   ArrowRight,
   PlusCircle,
+  Search,
+  Loader2,
 } from 'lucide-react';
 
 import type { ReportHistoryPageProps } from '../props';
@@ -20,17 +23,47 @@ export const ReportHistoryPage: React.FC<ReportHistoryPageProps> = ({
   onCreateNew,
 }) => {
   const { currentUser } = useAuth();
-  const { getUserReports } = useReports();
   const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
+
+  const [reports, setReports] = useState<WeeklyReport[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    let isCancelled = false;
+    const fetchUserReports = async () => {
+      setLoading(true);
+      try {
+        const res = await apiClient.reports.getPaginated({
+          userId: currentUser.id,
+          status: filterStatus !== 'All' ? filterStatus : undefined,
+          search: searchQuery.trim() || undefined,
+          page: currentPage,
+          pageSize,
+        });
+        if (!isCancelled) {
+          setReports(res.items);
+          setTotalItems(res.total);
+          setTotalPages(res.totalPages || 1);
+        }
+      } catch (err) {
+        console.error('Failed to load user reports:', err);
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    };
+    fetchUserReports();
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentUser, filterStatus, searchQuery, currentPage, pageSize]);
 
   if (!currentUser) return null;
-
-  const userReports = getUserReports(currentUser.id);
-
-  const filteredReports = userReports.filter((r) => {
-    if (filterStatus === 'All') return true;
-    return r.status === filterStatus;
-  });
 
   const statuses: (ReportStatus | 'All')[] = [
     'All',
@@ -39,6 +72,8 @@ export const ReportHistoryPage: React.FC<ReportHistoryPageProps> = ({
     'Approved',
     'Draft',
   ];
+
+  const validPage = Math.min(currentPage, totalPages);
 
   return (
     <div className="space-y-6 pb-12">
@@ -54,11 +89,29 @@ export const ReportHistoryPage: React.FC<ReportHistoryPageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search reports..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-8 pr-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-700 bg-white placeholder:text-slate-400 focus:ring-1 focus:ring-indigo-500 w-44"
+            />
+          </div>
+
           {/* Status Filter */}
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:ring-1 focus:ring-indigo-500"
           >
             {statuses.map((st) => (
@@ -81,7 +134,12 @@ export const ReportHistoryPage: React.FC<ReportHistoryPageProps> = ({
 
       {/* Reports List */}
       <div className="space-y-3">
-        {filteredReports.length === 0 ? (
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-6 w-6 text-indigo-600 animate-spin" />
+            <span className="text-xs text-slate-500 font-medium">Loading historical submissions...</span>
+          </div>
+        ) : reports.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center bg-white space-y-3">
             <FileText className="h-8 w-8 text-slate-300 mx-auto" />
             <h3 className="text-sm font-semibold text-slate-700">No reports found</h3>
@@ -97,87 +155,102 @@ export const ReportHistoryPage: React.FC<ReportHistoryPageProps> = ({
             </button>
           </div>
         ) : (
-          filteredReports.map((report) => {
-            const totalHours =
-              (report.hoursWorked?.development || 0) +
-              (report.hoursWorked?.testing || 0) +
-              (report.hoursWorked?.meetings || 0) +
-              (report.hoursWorked?.documentation || 0);
+          <>
+            {reports.map((report) => {
+              const totalHours =
+                (report.hoursWorked?.development || 0) +
+                (report.hoursWorked?.testing || 0) +
+                (report.hoursWorked?.meetings || 0) +
+                (report.hoursWorked?.documentation || 0);
 
-            return (
-              <div
-                key={report.id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 hover:border-indigo-200 hover:shadow-sm transition-all space-y-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700">
-                      <Calendar className="h-4 w-4 text-indigo-600" />
+              return (
+                <div
+                  key={report.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 hover:border-indigo-200 hover:shadow-sm transition-all space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700">
+                        <Calendar className="h-4 w-4 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{report.weekLabel}</h4>
+                        <p className="text-xs text-slate-500">Project: {report.projectName}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{report.weekLabel}</h4>
-                      <p className="text-xs text-slate-500">Project: {report.projectName}</p>
+
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={report.status} />
+                      <button
+                        type="button"
+                        onClick={() => onOpenReport(report.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                      >
+                        <span>{report.status === 'Needs Correction' ? 'Edit & Resubmit' : 'View Report'}</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={report.status} />
-                    <button
-                      type="button"
-                      onClick={() => onOpenReport(report.id)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
-                    >
-                      <span>{report.status === 'Needs Correction' ? 'Edit & Resubmit' : 'View Report'}</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </button>
+                  {/* Manager correction alert snippet if in Needs Correction */}
+                  {report.status === 'Needs Correction' && report.latestManagerComment && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">Correction Feedback:</span> "{report.latestManagerComment}"
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metrics Summary Strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[11px] text-slate-500 block">Tasks Completed</span>
+                      <span className="font-bold text-slate-900">
+                        {report.tasksCompleted?.length || 0} tasks
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[11px] text-slate-500 block">Total Hours Logged</span>
+                      <span className="font-bold text-slate-900">{totalHours} hrs</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[11px] text-slate-500 block">Blockers Logged</span>
+                      <span
+                        className={`font-bold ${
+                          (report.blockers?.length || 0) > 0 ? 'text-amber-700' : 'text-slate-900'
+                        }`}
+                      >
+                        {report.blockers?.length || 0} issues
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[11px] text-slate-500 block">Submission Date</span>
+                      <span className="font-medium text-slate-700">
+                        {report.submittedAt ? formatDate(report.submittedAt) : 'In Draft'}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
 
-                {/* Manager correction alert snippet if in Needs Correction */}
-                {report.status === 'Needs Correction' && report.latestManagerComment && (
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold">Correction Feedback:</span> "{report.latestManagerComment}"
-                    </div>
-                  </div>
-                )}
-
-                {/* Metrics Summary Strip */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[11px] text-slate-500 block">Tasks Completed</span>
-                    <span className="font-bold text-slate-900">
-                      {report.tasksCompleted?.length || 0} tasks
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[11px] text-slate-500 block">Total Hours Logged</span>
-                    <span className="font-bold text-slate-900">{totalHours} hrs</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[11px] text-slate-500 block">Blockers Logged</span>
-                    <span
-                      className={`font-bold ${
-                        (report.blockers?.length || 0) > 0 ? 'text-amber-700' : 'text-slate-900'
-                      }`}
-                    >
-                      {report.blockers?.length || 0} issues
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[11px] text-slate-500 block">Submission Date</span>
-                    <span className="font-medium text-slate-700">
-                      {report.submittedAt ? formatDate(report.submittedAt) : 'In Draft'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+            <Pagination
+              currentPage={validPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+              pageSizeOptions={[5, 10, 20]}
+            />
+          </>
         )}
       </div>
     </div>

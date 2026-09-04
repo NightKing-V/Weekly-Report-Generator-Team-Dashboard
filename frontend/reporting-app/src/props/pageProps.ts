@@ -14,6 +14,11 @@ export interface ReportDetailPageProps {
   onEditReport?: (reportId?: string) => void;
 }
 
+export interface TeamPageProps {
+  onOpenMemberProfile: (memberId: string) => void;
+  onOpenReportDetail: (reportId: string) => void;
+}
+
 export interface TeamDashboardPageProps {
   onOpenReportDetail: (reportId: string) => void;
   onOpenMemberProfile: (memberId: string) => void;

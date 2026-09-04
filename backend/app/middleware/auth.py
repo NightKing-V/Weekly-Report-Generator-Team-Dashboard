@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 import bcrypt
 import jwt
-from fastapi import HTTPException, Security, status
+from fastapi import HTTPException, Security, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 
@@ -101,3 +101,25 @@ async def get_current_user(
         )
 
     return UserModel(**user_dict)
+
+
+def require_roles(*allowed_roles: str):
+    """
+    Dependency factory that verifies the authenticated user possesses one of the allowed roles.
+    Returns the authenticated UserModel if valid, or raises 403 Forbidden.
+    """
+    async def role_checker(
+        current_user: UserModel = Depends(get_current_user)
+    ) -> UserModel:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access forbidden: this action requires one of [{', '.join(allowed_roles)}] role(s). Your role is '{current_user.role}'.",
+            )
+        return current_user
+    return role_checker
+
+# Convenience aliases for clean route definitions
+require_admin = require_roles("admin")
+require_manager_or_admin = require_roles("manager", "admin")
+require_authenticated = get_current_user

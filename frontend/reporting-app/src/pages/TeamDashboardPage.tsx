@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportContext';
+import { apiClient } from '../services/api';
 import { MetricCard } from '../components/common/MetricCard';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { AnalyticsCharts } from '../components/dashboard/AnalyticsCharts';
@@ -8,12 +9,15 @@ import { ReportsFilterBar } from '../components/dashboard/ReportsFilterBar';
 import { SideBySideComparison } from '../components/dashboard/SideBySideComparison';
 import { ActivityFeed } from '../components/dashboard/ActivityFeed';
 import { ReviewActionModal } from '../components/reports/ReviewActionModal';
+import { Pagination } from '../components/common/Pagination';
 import { formatDate } from '../utils/formatters';
+import type { WeeklyReport, DashboardMetrics, ActivityFeedItem } from '../types';
 import {
   FileCheck,
   CheckCircle,
   AlertTriangle,
   Clock,
+  Loader2,
 } from 'lucide-react';
 
 import type { TeamDashboardPageProps } from '../props';
@@ -23,17 +27,116 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
   onOpenReportDetail,
   onOpenMemberProfile,
 }) => {
-  const { users } = useAuth();
+  const { users, fetchUsers } = useAuth();
   const {
-    reports,
     projects,
-    activities,
+    fetchProjects,
     selectedWeek,
-    getDashboardMetrics,
     approveReport,
     requestChanges,
   } = useReports();
   const { execute } = useFetch();
+
+  // State for metrics and charts
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    totalSubmittedThisWeek: 0,
+    submissionComplianceRate: 0,
+    needsCorrectionCount: 0,
+    openBlockersCount: 0,
+    totalTeamMembers: 0,
+    approvedCount: 0,
+    pendingReviewCount: 0,
+  });
+  const [weekReports, setWeekReports] = useState<WeeklyReport[]>([]);
+  const [activitiesList, setActivitiesList] = useState<ActivityFeedItem[]>([]);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
+  // Filters state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMemberId, setSelectedMemberId] = useState('all');
+  const [selectedProjectId, setSelectedProjectId] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('All');
+
+  // Pagination state for detailed table
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageSize, setTablePageSize] = useState(10);
+  const [tableReports, setTableReports] = useState<WeeklyReport[]>([]);
+  const [totalTableItems, setTotalTableItems] = useState(0);
+  const [totalTablePages, setTotalTablePages] = useState(1);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Review modal state
+  const [reviewReportId, setReviewReportId] = useState<string | null>(null);
+
+  // Active view tab: 'table' vs 'charts' vs 'side-by-side'
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'reports' | 'side-by-side'>('overview');
+
+  // Load static catalogs (users, projects) on mount
+  useEffect(() => {
+    fetchUsers();
+    fetchProjects();
+  }, [fetchUsers, fetchProjects]);
+
+  // Load week-specific metrics, charts data, and activities
+  useEffect(() => {
+    let isCancelled = false;
+    const loadOverviewData = async () => {
+      setMetricsLoading(true);
+      try {
+        const [metricsData, weekData, actData] = await Promise.all([
+          apiClient.reports.getMetrics(selectedWeek),
+          apiClient.reports.getAll({ week: selectedWeek }),
+          apiClient.activities.getAll(),
+        ]);
+        if (!isCancelled) {
+          setMetrics(metricsData);
+          setWeekReports(weekData);
+          setActivitiesList(actData);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard overview:', err);
+      } finally {
+        if (!isCancelled) setMetricsLoading(false);
+      }
+    };
+    loadOverviewData();
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedWeek, refreshKey]);
+
+  // Load paginated table reports on-demand
+  useEffect(() => {
+    let isCancelled = false;
+    const loadTableData = async () => {
+      setTableLoading(true);
+      try {
+        const res = await apiClient.reports.getPaginated({
+          week: selectedWeek,
+          userId: selectedMemberId !== 'all' ? selectedMemberId : undefined,
+          projectId: selectedProjectId !== 'all' ? selectedProjectId : undefined,
+          status: selectedStatus !== 'All' ? selectedStatus : undefined,
+          search: searchQuery.trim() || undefined,
+          page: tablePage,
+          pageSize: tablePageSize,
+        });
+        if (!isCancelled) {
+          setTableReports(res.items);
+          setTotalTableItems(res.total);
+          setTotalTablePages(res.totalPages || 1);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard table reports:', err);
+      } finally {
+        if (!isCancelled) setTableLoading(false);
+      }
+    };
+    loadTableData();
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedWeek, selectedMemberId, selectedProjectId, selectedStatus, searchQuery, tablePage, tablePageSize, refreshKey]);
 
   const handleApprove = async (id: string, comment?: string) => {
     await execute(
@@ -43,6 +146,7 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
         successMessage: 'Report approved successfully!',
       }
     );
+    setRefreshKey((k) => k + 1);
   };
 
   const handleRequestChanges = async (id: string, comment: string) => {
@@ -53,55 +157,33 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
         successMessage: 'Requested revisions sent to contributor.',
       }
     );
+    setRefreshKey((k) => k + 1);
   };
 
-  const metrics = getDashboardMetrics();
-
-  // Filters state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMemberId, setSelectedMemberId] = useState('all');
-  const [selectedProjectId, setSelectedProjectId] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('All');
-
-  // Review modal state
-  const [reviewReportId, setReviewReportId] = useState<string | null>(null);
-
-  // Active view tab: 'table' vs 'charts' vs 'side-by-side'
-  const [dashboardTab, setDashboardTab] = useState<'overview' | 'reports' | 'side-by-side'>('overview');
-
-  // Filtered reports for active week and filters
   const teamMembers = users.filter((u) => u.role === 'team_member');
-
-  const filteredReports = reports.filter((report) => {
-    if (report.weekLabel !== selectedWeek) return false;
-    if (selectedMemberId !== 'all' && report.userId !== selectedMemberId) return false;
-    if (selectedProjectId !== 'all' && report.projectId !== selectedProjectId) return false;
-    if (selectedStatus !== 'All' && report.status !== selectedStatus) return false;
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      const matchName = report.userName.toLowerCase().includes(q);
-      const matchProject = report.projectName.toLowerCase().includes(q);
-      const matchTask = report.tasksCompleted?.some((t) => t.taskName.toLowerCase().includes(q));
-      if (!matchName && !matchProject && !matchTask) return false;
-    }
-    return true;
-  });
+  const validTablePage = Math.min(tablePage, totalTablePages);
 
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedMemberId('all');
     setSelectedProjectId('all');
     setSelectedStatus('All');
+    setTablePage(1);
   };
 
-  const selectedReviewReport = reports.find((r) => r.id === reviewReportId);
+  const selectedReviewReport =
+    tableReports.find((r) => r.id === reviewReportId) ||
+    weekReports.find((r) => r.id === reviewReportId);
 
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Manager Team Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900">Manager Team Dashboard</h1>
+            {metricsLoading && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
+          </div>
           <p className="text-xs text-slate-500 mt-1">
             Consolidated reports, velocity metrics, and compliance tracking for <strong>{selectedWeek}</strong>.
           </p>
@@ -129,7 +211,7 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Reports ({filteredReports.length})
+            All Reports ({totalTableItems})
           </button>
           <button
             type="button"
@@ -185,20 +267,32 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
         users={teamMembers}
         projects={projects}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(query) => {
+          setSearchQuery(query);
+          setTablePage(1);
+        }}
         selectedMemberId={selectedMemberId}
-        onMemberChange={setSelectedMemberId}
+        onMemberChange={(memberId) => {
+          setSelectedMemberId(memberId);
+          setTablePage(1);
+        }}
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={(projectId) => {
+          setSelectedProjectId(projectId);
+          setTablePage(1);
+        }}
         selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
+        onStatusChange={(status) => {
+          setSelectedStatus(status);
+          setTablePage(1);
+        }}
         onReset={resetFilters}
       />
 
       {/* Tab 1: Overview & Visual Insights */}
       {dashboardTab === 'overview' && (
         <div className="space-y-6">
-          <AnalyticsCharts reports={filteredReports} projects={projects} />
+          <AnalyticsCharts reports={weekReports} projects={projects} />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Quick Reports Snapshot Table */}
@@ -235,8 +329,8 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {teamMembers.map((member) => {
-                      const report = reports.find(
-                        (r) => r.userId === member.id && r.weekLabel === selectedWeek
+                      const report = weekReports.find(
+                        (r) => r.userId === member.id
                       );
                       const totalHrs = report
                         ? (report.hoursWorked?.development || 0) +
@@ -294,7 +388,7 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
 
             {/* Live Activity Feed */}
             <div className="lg:col-span-1">
-              <ActivityFeed activities={activities} onSelectReport={onOpenReportDetail} />
+              <ActivityFeed activities={activitiesList} onSelectReport={onOpenReportDetail} />
             </div>
           </div>
         </div>
@@ -309,7 +403,7 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
                 All Reports Submissions Table
               </h4>
               <p className="text-[11px] text-slate-500">
-                Displaying {filteredReports.length} reports matching current criteria
+                Displaying {totalTableItems} reports matching current criteria
               </p>
             </div>
           </div>
@@ -329,14 +423,23 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
-                {filteredReports.length === 0 ? (
+                {tableLoading ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-slate-400 italic text-xs">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
+                        <span>Loading filtered submissions...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : tableReports.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-slate-400 italic text-xs">
                       No reports match the selected filters for this week.
                     </td>
                   </tr>
                 ) : (
-                  filteredReports.map((report) => {
+                  tableReports.map((report) => {
                     const totalHours =
                       (report.hoursWorked?.development || 0) +
                       (report.hoursWorked?.testing || 0) +
@@ -415,12 +518,25 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={validTablePage}
+            totalPages={totalTablePages}
+            totalItems={totalTableItems}
+            pageSize={tablePageSize}
+            onPageChange={setTablePage}
+            onPageSizeChange={(size) => {
+              setTablePageSize(size);
+              setTablePage(1);
+            }}
+            pageSizeOptions={[5, 10, 20, 50]}
+          />
         </div>
       )}
 
       {/* Tab 3: Side-by-Side Comparison Bonus */}
       {dashboardTab === 'side-by-side' && (
-        <SideBySideComparison reports={reports} selectedWeek={selectedWeek} />
+        <SideBySideComparison reports={weekReports} selectedWeek={selectedWeek} />
       )}
 
       {/* Review Action Modal */}

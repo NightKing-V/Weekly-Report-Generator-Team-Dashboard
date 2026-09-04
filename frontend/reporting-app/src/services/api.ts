@@ -5,6 +5,7 @@ import type {
   ProjectCategory,
   ActivityFeedItem,
   DashboardMetrics,
+  PaginatedResponse,
 } from '../types';
 
 export class ApiError extends Error {
@@ -128,13 +129,43 @@ export const apiClient = {
 
   // Weekly Reports API
   reports: {
-    getAll: (filters?: { week?: string; userId?: string; status?: string }) => {
+    getAll: async (filters?: {
+      week?: string;
+      userId?: string;
+      status?: string;
+      search?: string;
+    }) => {
       const params = new URLSearchParams();
       if (filters?.week) params.append('week', filters.week);
       if (filters?.userId) params.append('user_id', filters.userId);
       if (filters?.status) params.append('status', filters.status);
+      if (filters?.search) params.append('search', filters.search);
       const queryString = params.toString() ? `?${params.toString()}` : '';
-      return request<WeeklyReport[]>(`/api/reports${queryString}`);
+      const res = await request<WeeklyReport[] | PaginatedResponse<WeeklyReport>>(`/api/reports${queryString}`);
+      if (res && typeof res === 'object' && 'items' in res && Array.isArray((res as PaginatedResponse<WeeklyReport>).items)) {
+        return (res as PaginatedResponse<WeeklyReport>).items;
+      }
+      return res as WeeklyReport[];
+    },
+    getPaginated: (filters?: {
+      page?: number;
+      pageSize?: number;
+      week?: string;
+      userId?: string;
+      projectId?: string;
+      status?: string;
+      search?: string;
+    }) => {
+      const params = new URLSearchParams();
+      if (filters?.page) params.append('page', String(filters.page));
+      if (filters?.pageSize) params.append('page_size', String(filters.pageSize));
+      if (filters?.week) params.append('week', filters.week);
+      if (filters?.userId) params.append('user_id', filters.userId);
+      if (filters?.projectId) params.append('project_id', filters.projectId);
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.search) params.append('search', filters.search);
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      return request<PaginatedResponse<WeeklyReport>>(`/api/reports${queryString}`);
     },
     getById: (id: string) => request<WeeklyReport>(`/api/reports/${id}`),
     saveDraft: (report: Partial<WeeklyReport>) =>

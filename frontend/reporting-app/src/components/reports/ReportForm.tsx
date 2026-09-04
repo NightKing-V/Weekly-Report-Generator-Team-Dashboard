@@ -38,8 +38,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
 
   // Fixed fields according to Section 2:
   const [weekLabel, setWeekLabel] = useState(initialReport?.weekLabel || selectedWeek);
-  const [weekStartDate, setWeekStartDate] = useState(initialReport?.weekStartDate || '2026-08-31');
-  const [weekEndDate, setWeekEndDate] = useState(initialReport?.weekEndDate || '2026-09-06');
   const [projectId, setProjectId] = useState(
     initialReport?.projectId || (projects[0] ? projects[0].id : '')
   );
@@ -185,8 +183,8 @@ export const ReportForm: React.FC<ReportFormProps> = ({
   const gatherReportData = (): Partial<WeeklyReport> => ({
     id: initialReport?.id,
     weekLabel,
-    weekStartDate,
-    weekEndDate,
+    weekStartDate: initialReport?.weekStartDate || new Date().toISOString().slice(0, 10),
+    weekEndDate: initialReport?.weekEndDate || new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10),
     projectId,
     tasksCompleted: tasksCompleted.filter((t) => t.taskName.trim().length > 0),
     tasksPlannedNextWeek: tasksPlanned.filter((t) => t.taskName.trim().length > 0),
@@ -264,11 +262,11 @@ export const ReportForm: React.FC<ReportFormProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Week Label */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" /> Week / Date Range
+              <Calendar className="h-3.5 w-3.5 text-slate-400" /> Reporting Week
             </label>
             <input
               type="text"
@@ -297,28 +295,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Date range helpers */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Start Date</label>
-              <input
-                type="date"
-                value={weekStartDate}
-                onChange={(e) => setWeekStartDate(e.target.value)}
-                className="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">End Date</label>
-              <input
-                type="date"
-                value={weekEndDate}
-                onChange={(e) => setWeekEndDate(e.target.value)}
-                className="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700"
-              />
-            </div>
           </div>
         </div>
       </div>

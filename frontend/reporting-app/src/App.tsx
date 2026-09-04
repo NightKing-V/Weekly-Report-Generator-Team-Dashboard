@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore, useReportStore } from './store';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar } from './components/common/Sidebar';
 import { SnackbarContainer } from './components/common/SnackbarContainer';
 import { AiAssistantModal } from './components/ai/AiAssistantModal';
 import type { NavigationTab } from './props';
-import { useFetch } from './hooks/useFetch';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -17,14 +16,16 @@ import { ManagerReviewPage } from './pages/ManagerReviewPage';
 import { TeamMemberProfilePage } from './pages/TeamMemberProfilePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
+import { TeamPage } from './pages/TeamPage';
 import { Sparkles } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const currentUser = useAuthStore((state) => state.currentUser);
   const token = useAuthStore((state) => state.token);
-  const { execute } = useFetch();
+  const hasFetchedTokenRef = useRef<string | null>(null);
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin';
 
   const [currentTab, setCurrentTab] = useState<NavigationTab>(() => {
     return isManager ? 'team-dashboard' : 'personal-report';
@@ -37,30 +38,32 @@ const AppContent: React.FC = () => {
   // Synchronize workspace data ONLY after successful login when token is present
   useEffect(() => {
     if (!currentUser || !token) {
+      hasFetchedTokenRef.current = null;
       return;
     }
 
-    execute(
-      async () => {
-        await Promise.all([
-          useAuthStore.getState().fetchUsers(),
-          useReportStore.getState().fetchReports(),
-          useReportStore.getState().fetchProjects(),
-          useReportStore.getState().fetchActivities(),
-        ]);
-      },
-      {
-        showErrorSnackbar: true,
-        defaultErrorMessage: 'Could not synchronize workspace data with server.',
-      }
-    );
-  }, [currentUser, token, execute]);
+    // Strictly run once per unique login token to prevent looping
+    if (hasFetchedTokenRef.current === token) {
+      return;
+    }
+    hasFetchedTokenRef.current = token;
+
+    // Lightweight initialization: only projects and activities for global widgets
+    Promise.all([
+      useReportStore.getState().fetchProjects(),
+      useReportStore.getState().fetchActivities(),
+    ]).catch((err) => {
+      console.error('Failed to synchronize initial workspace data:', err);
+    });
+  }, [currentUser, token]);
 
   // Derived effective tab prevents non-managers from seeing manager tabs
   const effectiveTab: NavigationTab =
-    !isManager && (currentTab === 'team-dashboard' || currentTab === 'manager-review' || currentTab === 'users')
+    !isManager && (currentTab === 'team-dashboard' || currentTab === 'manager-review')
       ? 'personal-report'
-      : currentTab;
+      : !isAdmin && currentTab === 'users'
+        ? 'team-dashboard'
+        : currentTab;
 
   // If unauthenticated or no valid token, present login page without fetching
   if (!currentUser || !token) {
@@ -127,11 +130,18 @@ const AppContent: React.FC = () => {
       case 'manager-review':
         return <ManagerReviewPage onOpenReportDetail={handleOpenReportDetail} />;
 
+      case 'team':
+        return (
+          <TeamPage
+            onOpenMemberProfile={handleOpenMemberProfile}
+            onOpenReportDetail={handleOpenReportDetail}
+          />
+        );
       case 'member-profile':
         return (
           <TeamMemberProfilePage
             memberId={selectedMemberId || ''}
-            onBack={() => navigateToTab('team-dashboard')}
+            onBack={() => navigateToTab('team')} // 👈 Returns to Team Directory
             onOpenReport={handleOpenReportDetail}
           />
         );

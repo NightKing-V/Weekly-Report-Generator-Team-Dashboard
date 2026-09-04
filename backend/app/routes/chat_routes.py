@@ -1,20 +1,32 @@
-from typing import List
-from fastapi import APIRouter
+from typing import List, Optional
+from fastapi import APIRouter, Depends
 from app.models.chats import ActivityFeedModel, ChatQueryRequest, ChatQueryResponse
 from app.repositories.chat_repository import chat_repository
 from app.repositories.report_repository import report_repository
+from app.models.users import UserModel
+from app.middleware.auth import require_authenticated
 
 router = APIRouter(prefix="/api", tags=["Activities & Chat"])
 
 
 @router.get("/activities", response_model=List[ActivityFeedModel])
-async def get_activities():
+async def get_activities(
+    limit: int = 50,
+    type: Optional[str] = None,
+    current_user: UserModel = Depends(require_authenticated),
+):
     """Fetch the real-time audit log of report submissions, approvals, and change requests."""
-    return await chat_repository.get_recent_activities()
+    activities = await chat_repository.get_recent_activities(limit=limit)
+    if type and type != "all":
+        activities = [a for a in activities if a.get("type") == type]
+    return activities
 
 
 @router.post("/chat/ask", response_model=ChatQueryResponse)
-async def ask_chat(payload: ChatQueryRequest):
+async def ask_chat(
+    payload: ChatQueryRequest,
+    current_user: UserModel = Depends(require_authenticated),
+):
     """Answer questions about team deliverables, blockers, or generate executive summaries."""
     query = payload.message.lower()
     reports = await report_repository.get_reports(week_label=payload.weekLabel)

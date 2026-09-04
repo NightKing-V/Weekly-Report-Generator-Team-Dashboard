@@ -64,14 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true });
     try {
       const users = await apiClient.users.getAll();
-      set((state) => {
-        let updatedCurrent = state.currentUser;
-        if (state.currentUser) {
-          const found = users.find((u) => u.id === state.currentUser?.id);
-          if (found) updatedCurrent = found;
-        }
-        return { users, currentUser: updatedCurrent, loading: false };
-      });
+      set({ users, loading: false });
       return users;
     } catch (err) {
       set({ loading: false });

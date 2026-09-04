@@ -9,12 +9,23 @@ export const ReviewActionModal: React.FC<ReviewActionModalProps> = ({
   reportId,
   reportAuthor,
   weekLabel,
+  initialAction = 'approve',
   onApprove,
   onRequestChanges,
 }) => {
-  const [action, setAction] = useState<'approve' | 'request_changes'>('approve');
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [action, setAction] = useState<'approve' | 'request_changes'>(initialAction);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
+
+  if (isOpen !== prevOpen) {
+    setPrevOpen(isOpen);
+    if (isOpen) {
+      setAction(initialAction);
+      setComment('');
+      setError('');
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

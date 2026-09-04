@@ -4,15 +4,13 @@ import { useReports } from '../../context/ReportContext';
 import {
   Calendar,
   Sparkles,
-  UserCheck,
   LogOut,
-  ChevronDown,
   LayoutDashboard,
 } from 'lucide-react';
 import type { NavbarProps } from '../../props';
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant }) => {
-  const { currentUser, users, switchUser, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { selectedWeek, setSelectedWeek, availableWeeks } = useReports();
 
   if (!currentUser) return null;
@@ -69,58 +67,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiAssistant }) => {
             <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
             <span className="hidden sm:inline">AI Assistant</span>
           </button>
-
-          {/* Role Switcher Pill for Demo / Reviewer Convenience */}
-          <div className="relative group">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
-            >
-              <UserCheck className="h-3.5 w-3.5 text-indigo-600" />
-              <span className="capitalize hidden md:inline">
-                {userRole === 'manager' ? 'Manager View' : 'Member View'}
-              </span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
-            </button>
-
-            {/* Dropdown for instant user/role switching */}
-            <div className="absolute right-0 mt-1.5 w-64 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black/5 focus:outline-hidden hidden group-hover:block z-50 p-2 border border-slate-200">
-              <div className="px-2 py-1.5 border-b border-slate-100 mb-1">
-                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Switch User / Role
-                </p>
-                <p className="text-[11px] text-slate-500">Test different user perspectives</p>
-              </div>
-              <div className="space-y-1 max-h-56 overflow-y-auto">
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => switchUser(u.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors cursor-pointer ${
-                      currentUser?.id === u.id
-                        ? 'bg-indigo-50 text-indigo-900 font-semibold'
-                        : 'text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="truncate">
-                      <p className="font-medium truncate">{u.name || u.email}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{u.title || 'Team Member'}</p>
-                    </div>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
-                        u.role === 'manager'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {u.role === 'manager' ? 'Mgr' : 'Dev'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
 
           {/* Current User Badge & Logout */}
           <div className="flex items-center gap-2 pl-2 border-l border-slate-200">

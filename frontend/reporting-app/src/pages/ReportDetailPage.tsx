@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportContext';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -7,6 +7,8 @@ import { HoursBreakdown } from '../components/reports/HoursBreakdown';
 import { VersionHistoryViewer } from '../components/reports/VersionHistoryViewer';
 import { ReviewActionModal } from '../components/reports/ReviewActionModal';
 import { formatDate } from '../utils/formatters';
+import { apiClient } from '../services/api';
+import type { WeeklyReport } from '../types';
 import {
   ArrowLeft,
   Calendar,
@@ -21,6 +23,7 @@ import {
   ShieldCheck,
   Flag,
   Star,
+  Loader2,
 } from 'lucide-react';
 
 import type { ReportDetailPageProps } from '../props';
@@ -37,10 +40,39 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
 
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewActionType, setReviewActionType] = useState<'approve' | 'request_changes'>('approve');
+
+  const storeReport = getReportById(reportId);
+  const [report, setReport] = useState<WeeklyReport | null>(storeReport || null);
+  const [loading, setLoading] = useState<boolean>(!storeReport);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchReport = async () => {
+      try {
+        const data = await apiClient.reports.getById(reportId);
+        if (isMounted) {
+          setReport(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch report details:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchReport();
+    return () => {
+      isMounted = false;
+    };
+  }, [reportId]);
 
   const handleApprove = async (id: string, comment?: string) => {
     await execute(
-      async () => approveReport(id, comment),
+      async () => {
+        const updated = await approveReport(id, comment);
+        setReport(updated);
+        return updated;
+      },
       {
         showSuccessSnackbar: true,
         successMessage: 'Report successfully approved!',
@@ -50,7 +82,11 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
 
   const handleRequestChanges = async (id: string, comment: string) => {
     await execute(
-      async () => requestChanges(id, comment),
+      async () => {
+        const updated = await requestChanges(id, comment);
+        setReport(updated);
+        return updated;
+      },
       {
         showSuccessSnackbar: true,
         successMessage: 'Revisions requested and sent to contributor.',
@@ -58,7 +94,14 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
     );
   };
 
-  const report = getReportById(reportId);
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center flex flex-col items-center justify-center space-y-3">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <p className="text-sm font-medium text-slate-600">Loading report details...</p>
+      </div>
+    );
+  }
 
   if (!report) {
     return (
@@ -67,7 +110,7 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg"
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" /> Go Back
         </button>
@@ -158,15 +201,21 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => approveReport(report.id)}
-                className="px-3.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+                onClick={() => {
+                  setReviewActionType('approve');
+                  setIsReviewModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
               >
                 Approve
               </button>
               <button
                 type="button"
-                onClick={() => setIsReviewModalOpen(true)}
-                className="px-3.5 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
+                onClick={() => {
+                  setReviewActionType('request_changes');
+                  setIsReviewModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
               >
                 Request Correction
               </button>
@@ -193,7 +242,7 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
         <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
           1. Tasks Completed ({report.tasksCompleted?.length || 0})
         </h4>
-        <TaskTable tasks={report.tasksCompleted} onChange={() => {}} readOnly={true} />
+        <TaskTable tasks={report.tasksCompleted} onChange={() => { }} readOnly={true} />
       </div>
 
       {/* Section 2: Tasks Planned for Next Week */}
@@ -239,11 +288,10 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
               report.blockers.map((b) => (
                 <div
                   key={b.id}
-                  className={`p-3 rounded-xl border text-xs ${
-                    b.isKeyIssue
-                      ? 'border-amber-400 bg-amber-50/80 text-amber-900 ring-1 ring-amber-300'
-                      : 'border-slate-200 bg-slate-50 text-slate-800'
-                  }`}
+                  className={`p-3 rounded-xl border text-xs ${b.isKeyIssue
+                    ? 'border-amber-400 bg-amber-50/80 text-amber-900 ring-1 ring-amber-300'
+                    : 'border-slate-200 bg-slate-50 text-slate-800'
+                    }`}
                 >
                   <div className="flex items-start gap-2">
                     {b.isKeyIssue && (
@@ -277,11 +325,10 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
               report.achievements.map((a) => (
                 <div
                   key={a.id}
-                  className={`p-3 rounded-xl border text-xs ${
-                    a.isKeyAchievement
-                      ? 'border-emerald-400 bg-emerald-50/80 text-emerald-900 ring-1 ring-emerald-300'
-                      : 'border-slate-200 bg-slate-50 text-slate-800'
-                  }`}
+                  className={`p-3 rounded-xl border text-xs ${a.isKeyAchievement
+                    ? 'border-emerald-400 bg-emerald-50/80 text-emerald-900 ring-1 ring-emerald-300'
+                    : 'border-slate-200 bg-slate-50 text-slate-800'
+                    }`}
                 >
                   <div className="flex items-start gap-2">
                     {a.isKeyAchievement && (
@@ -304,7 +351,7 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
       </div>
 
       {/* Section 5: Hours Breakdown */}
-      <HoursBreakdown hours={report.hoursWorked} onChange={() => {}} readOnly={true} />
+      <HoursBreakdown hours={report.hoursWorked} onChange={() => { }} readOnly={true} />
 
       {/* Section 6: Notes or Links */}
       {report.notesOrLinks && (
@@ -330,11 +377,10 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
             {report.reviewHistory.map((rev) => (
               <div
                 key={rev.id}
-                className={`p-3 rounded-xl border text-xs space-y-1 ${
-                  rev.action === 'approve'
-                    ? 'border-emerald-200 bg-emerald-50/50 text-emerald-950'
-                    : 'border-amber-200 bg-amber-50/50 text-amber-950'
-                }`}
+                className={`p-3 rounded-xl border text-xs space-y-1 ${rev.action === 'approve'
+                  ? 'border-emerald-200 bg-emerald-50/50 text-emerald-950'
+                  : 'border-amber-200 bg-amber-50/50 text-amber-950'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold flex items-center gap-1.5">
@@ -368,6 +414,7 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({
         reportId={report.id}
         reportAuthor={report.userName}
         weekLabel={report.weekLabel}
+        initialAction={reviewActionType}
         onApprove={handleApprove}
         onRequestChanges={handleRequestChanges}
       />

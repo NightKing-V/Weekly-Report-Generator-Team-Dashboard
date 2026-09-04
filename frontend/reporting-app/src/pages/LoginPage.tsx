@@ -156,7 +156,7 @@ export const LoginPage: React.FC = () => {
                           : 'border-slate-200 text-slate-600'
                       }`}
                     >
-                      <span className="font-bold block">Manager / Admin</span>
+                      <span className="font-bold block">Manager</span>
                       <span className="text-[10px] text-slate-500">Reviews & dashboard</span>
                     </button>
                   </div>
@@ -225,7 +225,7 @@ export const LoginPage: React.FC = () => {
               disabled={loading}
               className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold shadow-md shadow-indigo-100 transition-colors cursor-pointer"
             >
-              {loading ? 'Authenticating...' : mode === 'login' ? 'Sign In with JWT' : 'Complete Registration'}
+              {loading ? 'Authenticating...' : mode === 'login' ? 'Sign In' : 'Complete Registration'}
             </button>
           </form>
 

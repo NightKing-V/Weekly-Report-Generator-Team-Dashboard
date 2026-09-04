@@ -4,6 +4,10 @@ from .auth import (
     create_access_token,
     decode_access_token,
     get_current_user,
+    require_roles,
+    require_admin,
+    require_manager_or_admin,
+    require_authenticated,
 )
 
 __all__ = [
@@ -12,5 +16,9 @@ __all__ = [
     "create_access_token",
     "decode_access_token",
     "get_current_user",
+    "require_roles",
+    "require_admin",
+    "require_manager_or_admin",
+    "require_authenticated",
 ]
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useReports } from '../context/ReportContext';
 import { useAuth } from '../context/AuthContext';
 import type { ProjectCategory } from '../types';
@@ -14,9 +14,14 @@ import {
 import { useFetch } from '../hooks/useFetch';
 
 export const ProjectsPage: React.FC = () => {
-  const { projects, addProject, updateProject, deleteProject, reports } = useReports();
-  const { users, currentUser } = useAuth();
+  const { projects, fetchProjects, addProject, updateProject, deleteProject } = useReports();
+  const { users, currentUser, fetchUsers } = useAuth();
   const { execute } = useFetch();
+
+  useEffect(() => {
+    fetchProjects();
+    fetchUsers();
+  }, [fetchProjects, fetchUsers]);
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
 
@@ -147,8 +152,6 @@ export const ProjectsPage: React.FC = () => {
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {projects.map((project) => {
-          // Calculate usage stats
-          const linkedReportsCount = reports.filter((r) => r.projectId === project.id).length;
           const assignedMembers = users.filter((u) => project.assignedMemberIds?.includes(u.id));
 
           return (
@@ -213,7 +216,9 @@ export const ProjectsPage: React.FC = () => {
 
               {/* Card Footer Actions */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span>{linkedReportsCount} weekly report(s)</span>
+                <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                  {project.code}
+                </span>
 
                 {isManager && (
                   <div className="flex items-center gap-1">

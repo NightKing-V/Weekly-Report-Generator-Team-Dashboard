@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types';
 import { Modal } from '../components/common/Modal';
@@ -14,8 +14,12 @@ import {
 import { useFetch } from '../hooks/useFetch';
 
 export const UserManagementPage: React.FC = () => {
-  const { users, currentUser, updateUserRole, removeUser, addUser } = useAuth();
+  const { users, currentUser, updateUserRole, removeUser, addUser, fetchUsers } = useAuth();
   const { execute } = useFetch();
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
@@ -202,13 +206,15 @@ export const UserManagementPage: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                          user.role === 'manager'
-                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          user.role === 'admin'
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : user.role === 'manager'
+                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
                         }`}
                       >
                         <Shield className="h-3 w-3" />
-                        {user.role === 'manager' ? 'Manager / Admin' : 'Team Member'}
+                        {user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : 'Team Member'}
                       </span>
                     </td>
 
@@ -292,7 +298,7 @@ export const UserManagementPage: React.FC = () => {
               className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white"
             >
               <option value="team_member">Team Member (can submit weekly reports)</option>
-              <option value="manager">Manager / Admin (can review reports and view dashboard)</option>
+              <option value="manager">Manager (can review reports and view dashboard)</option>
             </select>
           </div>
 
