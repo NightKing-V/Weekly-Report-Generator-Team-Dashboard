@@ -1,7 +1,7 @@
-"""LangGraph Groq & CrewAI Chatbot Workflow.
+"""LangGraph Groq Chatbot Workflow with Lightweight RAG.
 
 Orchestrates:
-- QnA Node powered by CrewAI Chat Crew equipped with iterative report retrieval tools.
+- QnA Node powered by minimal, lightweight RAG using LangChain & ChatGroq.
 - 5-Response Rolling Summarizer using Groq LLM under app.llm.
 - In-memory session MemorySaver (no permanent MongoDB persistence).
 """
@@ -14,7 +14,7 @@ from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.llm import LLMFactory, LLMTier
-from app.services.chat.crew import run_chat_crew
+from app.services.chat.rag import run_rag
 
 logger = logging.getLogger("app.services.chat.graph")
 
@@ -24,13 +24,14 @@ class ChatState(TypedDict):
     response_count: int
     summary: str
     week_label: Optional[str]
+    sources_count: Optional[int]
 
 
 async def qna_node(state: ChatState) -> dict:
-    """Core QnA Node: Evaluates user query using the CrewAI Chat Crew.
+    """Core QnA Node: Evaluates user query using lightweight LangChain RAG.
     
-    The Chat Crew iteratively executes report tools to gather evidence and facts,
-    synthesizes the answer, and increments the session response counter.
+    Retrieves grounded weekly report context from MongoDB, synthesizes the answer,
+    and increments the session response counter.
     """
     week_label = state.get("week_label") or "Week 36 (Aug 31 - Sep 06, 2026)"
     rolling_summary = state.get("summary") or ""
@@ -45,19 +46,20 @@ async def qna_node(state: ChatState) -> dict:
     if not last_query:
         last_query = "Summarize weekly reports and team status"
 
-    # Invoke CrewAI Chat Crew
-    crew_result = await run_chat_crew(
+    # Invoke Lightweight RAG
+    rag_result = await run_rag(
         query=last_query,
         selected_week=week_label,
         rolling_summary=rolling_summary,
     )
 
-    reply_text = crew_result.get("reply", "")
+    reply_text = rag_result.get("reply", "")
     new_count = state.get("response_count", 0) + 1
 
     return {
         "messages": [AIMessage(content=reply_text)],
         "response_count": new_count,
+        "sources_count": rag_result.get("sources_count", 0),
     }
 
 

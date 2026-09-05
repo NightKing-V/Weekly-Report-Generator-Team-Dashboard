@@ -6,8 +6,7 @@ python-dotenv
 bcrypt
 pyjwt
 langgraph
+langchain
 langchain-groq
 langchain-core
-crewai
-litellm
 groq

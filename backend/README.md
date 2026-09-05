@@ -1,6 +1,6 @@
 # Weekly Report Generator & Team Dashboard — Backend API
 
-An enterprise-ready, asynchronous REST API powered by **FastAPI**, **MongoDB (Motor)**, **Pydantic v2**, and an agentic AI intelligence layer orchestrating **LangGraph**, **CrewAI**, and **Groq LLM**.
+An enterprise-ready, asynchronous REST API powered by **FastAPI**, **MongoDB (Motor)**, **Pydantic v2**, and a lightweight AI intelligence layer orchestrating **LangGraph**, **LangChain**, and **ChatGroq**.
 
 ---
 
@@ -12,9 +12,9 @@ An enterprise-ready, asynchronous REST API powered by **FastAPI**, **MongoDB (Mo
 - **Immutable Version History**: Full snapshot tracking and review comment audit logs stored with every report version.
 - **Automated KPI Metrics**: Calculates live submission compliance, pending reviews, approved deliverables, and open team blockers.
 - **Intelligent QnA Assistant**:
-  - **CrewAI Chat Crew**: Autonomous agent equipped with 5 specialized tools to search reports, analyze individual contributor progress, inspect KPI metrics, and flag blockers.
+  - **Lightweight LangChain RAG Engine**: Pure async MongoDB retrieval for weekly reports, KPI compliance, contributor deliverables, and critical blockers without heavy thread overhead.
   - **LangGraph StateGraph**: Maintains session conversational memory (`MemorySaver`) and triggers an automatic rolling summarizer every 5 turns.
-  - **Groq LLM Provider**: High-throughput inference via `ChatGroq` with runtime LiteLLM compatibility patches.
+  - **Groq LLM Provider**: High-throughput inference via LangChain's `ChatGroq` (`qwen/qwen3.8-27b`).
 - **Standardized Calendar**: ISO Monday-to-Sunday weekly reporting boundaries.
 - **Auto-Seeding**: Seeds initial users, projects, reports, and activity logs on first boot.
 
@@ -127,7 +127,7 @@ backend/
 │   │   ├── LLMProvider.py          # Abstract base class
 │   │   ├── tiers.py                # Model tier definitions (SMALL, STANDARD, LARGE)
 │   │   └── clients/
-│   │       └── groq_client.py      # Groq client & LiteLLM patches
+│   │       └── groq_client.py      # Groq client & ChatGroq provider
 │   ├── middleware/
 │   │   └── auth.py                 # JWT token decoding & RBAC route dependencies
 │   ├── models/                     # Pydantic v2 schemas
@@ -147,8 +147,8 @@ backend/
 │       │   └── report_service.py   # State transitions, KPI calculations, audits
 │       └── chat/
 │           ├── chat_service.py     # Chat coordinator
-│           ├── graph.py            # LangGraph StateGraph (QnA + Summarizer)
-│           └── crew.py             # CrewAI Chat Crew & Report Tools
+│           ├── graph.py            # LangGraph StateGraph (QnA + 5-turn Summarizer)
+│           └── rag.py              # Lightweight LangChain RAG Engine & MongoDB Context Retriever
 ├── main.py                         # Application lifespan & router mounting
 ├── requirements.txt                # Python dependencies
 └── Dockerfile                      # Backend container definition
@@ -183,7 +183,7 @@ backend/
 | Method | Endpoint | Description | Access |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/activities` | Retrieves the real-time team audit log | Authenticated |
-| `POST` | `/api/chat/ask` | LangGraph + CrewAI intelligent assistant query | Authenticated |
+| `POST` | `/api/chat/ask` | LangGraph + LangChain Lightweight RAG query | Authenticated |
 
 ---
 

@@ -177,7 +177,7 @@ Manual date range text inputs have been completely removed from the report submi
 
 - **Session-Only Memory**: Initializes a unique session `threadId` via `crypto.randomUUID()` when the application opens.
 - **Lifecycle Persistence**: Chat state is maintained in React state while the modal is minimized or closed. When the user performs a full browser page refresh, the session resets cleanly without leaving stale data in the database.
-- **Rich Markdown Formatting**: Supports structured markdown rendering, tables, bullet points, and code snippets returned by the backend CrewAI agents.
+- **Rich Markdown Formatting**: Supports structured markdown rendering, tables, bullet points, and code snippets returned by the backend LangGraph + LangChain RAG engine.
 - **Context Injection**: Automatically attaches the currently viewed `weekLabel` to user queries, providing the AI assistant with temporal context.
 
 ---

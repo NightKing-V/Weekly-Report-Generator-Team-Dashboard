@@ -2,7 +2,7 @@
 
 ## 1. Architectural Overview
 
-The **Weekly Report Generator & Team Dashboard** backend is engineered as a high-performance, asynchronous REST API powered by **FastAPI**, **MongoDB (Motor)**, **Pydantic v2**, and an advanced AI intelligence layer orchestrating **LangGraph**, **CrewAI**, and **ChatGroq**.
+The **Weekly Report Generator & Team Dashboard** backend is engineered as a high-performance, asynchronous REST API powered by **FastAPI**, **MongoDB (Motor)**, **Pydantic v2**, and a lightweight AI intelligence layer orchestrating **LangGraph**, **LangChain**, and **ChatGroq**.
 
 The system adheres strictly to a **Three-Tier Layered Architecture**:
 1. **API / Route Layer (`app/routes/`)**: Handles HTTP requests, enforces JWT authentication, validates payload schemas, and delegates immediately to the domain service layer.
@@ -37,7 +37,7 @@ The system adheres strictly to a **Three-Tier Layered Architecture**:
 │  │ • KPI Computations      │  │ • User authentication   │  │ • Session QnA Flow     │  │
 │  │ • Version Snapshots     │  │ • Profile resolution    │  │ • LangGraph StateGraph │  │
 │  │ • Approval State Machine│  │ • Role administration   │  │ • 5-turn Summarizer    │  │
-│  │ • Audit Activity Events │  │                         │  │ • CrewAI Chat Crew     │  │
+│  │ • Audit Activity Events │  │                         │  │ • Lightweight RAG Flow │  │
 │  └───────────┬─────────────┘  └────────────┬────────────┘  └───────────┬────────────┘  │
 └──────────────┼─────────────────────────────┼───────────────────────────┼───────────────┘
                │                             │                           │
@@ -73,9 +73,9 @@ backend/
 │   ├── llm/                        # Enterprise LLM Provider Factory
 │   │   ├── LLMFactory.py           # Provider registry & model instantiation
 │   │   ├── LLMProvider.py          # Abstract base class for LLM providers
-│   │   ├── tiers.py                # Tier configs: SMALL (Routing/Summary), STANDARD, LARGE
+│   │   ├── tiers.py                # Tier configs: SMALL (Summarizer), STANDARD (QnA RAG), LARGE
 │   │   └── clients/
-│   │       └── groq_client.py      # Groq client & LiteLLM compatibility monkeypatches
+│   │       └── groq_client.py      # Groq client & ChatGroq provider
 │   │
 │   ├── middleware/
 │   │   └── auth.py                 # JWT token creation/verification & RBAC dependency guards
@@ -101,10 +101,8 @@ backend/
 │       └── chat/
 │           ├── chat_service.py     # Chat coordinator bridging REST to LangGraph
 │           ├── graph.py            # LangGraph StateGraph (QnA node, 5-turn Summarizer)
-│           ├── crew.py             # CrewAI Chat Crew & 5 specialized report tools
-│           └── tools.py            # Tool definitions and schema models
+│           └── rag.py              # Lightweight LangChain RAG Engine & Context Retrieval
 │
-├── tests/                          # Automated test suites
 ├── Dockerfile                      # Production container build
 ├── main.py                         # FastAPI application entrypoint & lifespan
 ├── requirements.txt                # Python dependencies
@@ -167,12 +165,12 @@ Business logic is isolated from HTTP handling inside `app/services/`:
 ### 4.2 Chat Service & Agent Orchestration (`app/services/chat/`)
 - **Session-Only Memory**: Maintains dialogue context in-memory using LangGraph's `MemorySaver`. When the client refreshes, the thread ID changes, providing a fresh session without persisting chat logs to the database.
 - **Two-Node Graph Workflow**:
-  1. `qna_node`: Executes the **CrewAI Chat Crew**, using iterative tool calling to extract evidence from MongoDB.
-  2. `summarize_node`: Triggers automatically every 5 user responses, compressing dialogue into a 150-word rolling context summary.
+  1. `qna_node`: Executes the **Lightweight LangChain RAG Engine** (`rag.py`), using direct async MongoDB queries to retrieve weekly submissions, KPI metrics, and blockers.
+  2. `summarize_node`: Triggers automatically every 5 user responses, compressing dialogue into a 150-word rolling context summary using Groq's Tier 1 model.
 
 ---
 
-## 5. AI Assistant: LangGraph, CrewAI & Groq Integration
+## 5. AI Assistant: LangGraph, LangChain & Groq Lightweight RAG
 
 ### 5.1 Architecture Diagram
 
@@ -183,60 +181,76 @@ Business logic is isolated from HTTP handling inside `app/services/`:
                ┌───────────────────────────┐
                │    LangGraph StateGraph   │
                │       (chat_graph)        │
+               │   • MemorySaver Session   │
                └─────────────┬─────────────┘
                              │
                              ▼
                ┌───────────────────────────┐
                │         qna_node          │
-               │   (CrewAI ReportQnACrew)  │
+               │  (`run_lightweight_rag`)  │
                └─────────────┬─────────────┘
                              │
             ┌────────────────┴────────────────┐
-            ▼                                 ▼
-┌─────────────────────────┐       ┌────────────────────────┐
-│     analyst_agent       │       │  Iterative Tool Calls  │
-│  Role: Engineering      │◄─────►│ • FetchWeeklyReports   │
-│  Intelligence Analyst   │       │ • FetchContributor     │
-│  Model: Groq LLM        │       │ • FetchTeamKpi         │
-│  (qwen/qwen3.8-27b)     │       │ • FetchTeamBlockers    │
-└─────────────────────────┘       │ • FetchProjectsList    │
-            │                     └────────────────────────┘
-            ▼
-    Synthesized Reply
-            │
-            ▼
-┌───────────────────────────────┐
-│ Conditional Edge:             │
-│ response_count % 5 == 0 ?     │
-└───────┬───────────────┬───────┘
-   YES  │               │ NO
-        ▼               ▼
-┌────────────────┐     END
-│ summarize_node │
-│ (Groq Tier 1)  │
-└───────┬────────┘
-        ▼
-       END (Returns Reply + Rolling Summary)
+            │ Direct Async MongoDB Retrieval  │
+            │ • calculate_metrics(week)       │
+            │ • get_reports(week, search)     │
+            │ • get_all_projects()            │
+            └────────────────┬────────────────┘
+                             │
+                             ▼
+               ┌───────────────────────────┐
+               │ Structured Context Prompt │
+               │ • Contributors & Tasks    │
+               │ • Blocker Key Issue Flags │
+               │ • Live Compliance Rates   │
+               │ • Prior Rolling Summary   │
+               └─────────────┬─────────────┘
+                             │
+                             ▼
+               ┌───────────────────────────┐
+               │      LangChain ChatGroq   │
+               │    (qwen/qwen3.8-27b)     │
+               └─────────────┬─────────────┘
+                             │
+                     Synthesized Reply
+                             │
+                             ▼
+               ┌───────────────────────────┐
+               │ Conditional Edge:         │
+               │ response_count % 5 == 0 ? │
+               └───────┬───────────┬───────┘
+                  YES  │           │ NO
+                       ▼           ▼
+               ┌────────────────┐ END
+               │ summarize_node │
+               │  (Groq Tier 1) │
+               └───────┬────────┘
+                       ▼
+                      END (Returns Reply + Rolling Summary)
 ```
 
-### 5.2 CrewAI Specialized Report Tools (`app/services/chat/crew.py`)
+### 5.2 Pure Asynchronous Context Retrieval (`app/services/chat/rag.py`)
 
-All tools inherit from `crewai.tools.BaseTool` with Pydantic v2 schemas:
+Unlike multi-agent frameworks that introduce thread-pool bottlenecks and synchronous loops, the **Lightweight RAG Engine** queries MongoDB directly in FastAPI's native async event loop:
 
-1. **`FetchWeeklyReportsTool`**: Retrieves reports matching week label, project ID, status, or free-text keywords.
-2. **`FetchContributorReportTool`**: Inspects specific individual submissions (e.g., Sarah Chen, Priya Patel).
-3. **`FetchTeamKpiMetricsTool`**: Computes live KPI metrics (compliance, submissions, blockers) for the week.
-4. **`FetchTeamBlockersTool`**: Scans all active blockers, flagging critical key issues across the team.
-5. **`FetchProjectsListTool`**: Enumerates all active project categories, codes, and descriptions.
+1. **Targeted Contributor Discovery**: If the query mentions a team member (e.g., "Sarah", "Michael", "Priya"), queries `report_repository.get_reports` filtering by author name and week.
+2. **Weekly Baseline Submissions**: Retrieves all contributor submissions for the active reporting week with full deliverables, tasks, and manager feedback.
+3. **Real-time KPI Metrics**: Leverages `report_service.calculate_metrics(week)` to provide exact submission compliance, pending reviews, and open blockers.
+4. **Critical Blocker Highlighting**: Scans all report blockers and appends `⚠️ [CRITICAL KEY ISSUE]` badges to ensure the LLM alerts managers to severe impediments.
+5. **Project Category Context**: Injects project codes (e.g., `CLT-A`, `INT-CI`) and descriptions when users ask about project-specific progress.
 
-### 5.3 Thread-Safe Async Bridge (`run_async`)
-CrewAI executes tools synchronously. To safely run async Motor MongoDB calls inside FastAPI's running event loop, tools execute via a dedicated `ThreadPoolExecutor` using an isolated event loop per task.
+### 5.3 Direct LangChain ChatGroq Provider (`app/llm/clients/groq_client.py`)
 
-### 5.4 Groq LiteLLM Compatibility Engine (`app/llm/clients/groq_client.py`)
-To prevent Groq API rejections, the engine installs runtime patches during startup:
-- **`tool_choice="none"` Fix**: Strips `tools` and `tool_choice` parameters when forcing final answers, eliminating Groq's `"Tool choice is none, but model called a tool"` error.
-- **Strict Parameter Normalization**: Removes `"strict": True` and cleans up optional tool fields with default values from the `required` list to prevent `"missing properties"` validation errors.
-- **Cache Flag Stripping**: Removes unsupported `cache_breakpoint` and `cache_control` headers.
+- **Pure LangChain Integration**: Employs `langchain_groq.ChatGroq` directly without LiteLLM wrappers or monkeypatches.
+- **OTPM Rate-Limit Tuning**: Default `max_tokens` is bounded to 800 tokens for standard RAG and 400 tokens for the rolling summarizer. This ensures requests remain within Groq's on-demand free tier token limits (1000 OTPM).
+- **Fast Startup & Low Overhead**: Eliminates all background thread pools, complex tool schema parsing, and sync-to-async bridges.
+
+### 5.4 Deterministic RAG Fallback Mechanism
+
+To guarantee high availability and prevent crashes:
+- If `GROQ_API_KEY` is not configured, or if Groq API encounters a temporary rate limit (`429`), the engine catches the exception gracefully.
+- Generates a clean, factual markdown summary constructed directly from the retrieved MongoDB context.
+- Maintains dialogue continuity without interrupting the user experience or breaking the 5-turn summarizer state machine.
 
 ---
 

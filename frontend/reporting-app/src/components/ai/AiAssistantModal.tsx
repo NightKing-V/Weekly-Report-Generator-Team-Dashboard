@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useReports } from '../../context/ReportContext';
 import { apiClient } from '../../services/api';
-import { Sparkles, Send, Bot, User as UserIcon, RefreshCw, X, Minus, RotateCcw, Layers } from 'lucide-react';
+import { Sparkles, Send, Bot, User as UserIcon, RefreshCw, X, Minus, RotateCcw, Layers, Copy, Check } from 'lucide-react';
+import { FormattedChatMessage } from './FormattedChatMessage';
 import type { AiAssistantPanelProps } from '../../props';
 
 interface ChatMessage {
@@ -12,6 +13,41 @@ interface ChatMessage {
   sourcesCount?: number;
   responseCount?: number;
 }
+
+const MessageCopyButton: React.FC<{ text: string }> = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="text-[10px] text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-100"
+      title="Copy message to clipboard"
+    >
+      {copied ? (
+        <>
+          <Check className="h-3 w-3 text-emerald-500" />
+          <span className="text-emerald-600 font-medium">Copied</span>
+        </>
+      ) : (
+        <>
+          <Copy className="h-3 w-3" />
+          <span>Copy</span>
+        </>
+      )}
+    </button>
+  );
+};
 
 export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onClose }) => {
   const { selectedWeek } = useReports();
@@ -174,24 +210,27 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
 
       {/* Rolling Summary Card (every 5 responses) */}
       {rollingSummary && (
-        <div className="px-3 pt-2.5 pb-1.5 bg-indigo-50/70 border-b border-indigo-150/80 shrink-0">
+        <div className="px-3 pt-2.5 pb-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/70 border-b border-indigo-150/80 shrink-0">
           <div className="flex items-center justify-between text-[11px] font-semibold text-indigo-900 mb-1">
-            <span className="flex items-center gap-1">
-              <Layers className="h-3 w-3 text-indigo-600" />
+            <span className="flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
               Rolling Summary (5-Turn Checkpoint)
             </span>
-            <button
-              type="button"
-              onClick={() => setShowSummaryDetails((prev) => !prev)}
-              className="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer underline"
-            >
-              {showSummaryDetails ? 'Hide' : 'Show'}
-            </button>
+            <div className="flex items-center gap-2">
+              <MessageCopyButton text={rollingSummary} />
+              <button
+                type="button"
+                onClick={() => setShowSummaryDetails((prev) => !prev)}
+                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer underline"
+              >
+                {showSummaryDetails ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
           {showSummaryDetails && (
-            <p className="text-[11px] text-slate-700 italic leading-relaxed line-clamp-3 hover:line-clamp-none transition-all">
-              {rollingSummary}
-            </p>
+            <div className="mt-1.5 p-2.5 bg-white/85 rounded-xl border border-indigo-100 shadow-2xs max-h-36 overflow-y-auto">
+              <FormattedChatMessage content={rollingSummary} />
+            </div>
           )}
         </div>
       )}
@@ -239,15 +278,22 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
                 className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
                   m.sender === 'user'
                     ? 'bg-indigo-600 text-white rounded-tr-xs shadow-xs'
-                    : 'bg-white text-slate-800 rounded-tl-xs whitespace-pre-line border border-slate-200/80 shadow-xs'
+                    : 'bg-white text-slate-800 rounded-tl-xs border border-slate-200/80 shadow-xs'
                 }`}
               >
-                {m.text}
+                <FormattedChatMessage content={m.text} isUser={m.sender === 'user'} />
               </div>
 
-              {m.sourcesCount !== undefined && m.sourcesCount > 0 && (
-                <div className="text-[10px] text-slate-400 px-1 flex items-center gap-1">
-                  <span>📊 {m.sourcesCount} report{m.sourcesCount > 1 ? 's' : ''} retrieved</span>
+              {m.sender === 'assistant' && (
+                <div className="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5">
+                  {m.sourcesCount !== undefined && m.sourcesCount > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-indigo-600 font-medium bg-indigo-50/80 px-2 py-0.5 rounded-full border border-indigo-100">
+                      📊 {m.sourcesCount} report{m.sourcesCount > 1 ? 's' : ''} retrieved
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <MessageCopyButton text={m.text} />
                 </div>
               )}
             </div>

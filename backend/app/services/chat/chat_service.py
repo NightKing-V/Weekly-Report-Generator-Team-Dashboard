@@ -57,8 +57,10 @@ class ChatService:
         if not reply_text:
             reply_text = "I processed your request, but could not produce a text summary. Please ask again."
 
-        # Count tool invocations as sourcesCount
-        sources_count = sum(1 for m in messages if isinstance(m, ToolMessage))
+        # Extract sources count from RAG result or tool invocations
+        sources_count = result.get("sources_count")
+        if sources_count is None:
+            sources_count = sum(1 for m in messages if isinstance(m, ToolMessage))
 
         return ChatQueryResponse(
             reply=reply_text,

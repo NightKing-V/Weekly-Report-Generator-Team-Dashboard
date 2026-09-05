@@ -17,19 +17,19 @@ def get_default_groq_model() -> str:
 class LLMTier:
     SMALL = LLMTierConfig(
         provider="groq",
-        kwargs={"model": os.getenv("GROQ_MODEL_SMALL", "qwen/qwen3.8-27b"), "temperature": 0.0},
+        kwargs={"model": os.getenv("GROQ_MODEL_SMALL", "qwen/qwen3.8-27b"), "temperature": 0.0, "max_tokens": 400},
     )
     """Tier 1: Fast & lightweight - LangGraph routing, summarizer, FAQ"""
 
     STANDARD = LLMTierConfig(
         provider="groq",
-        kwargs={"model": get_default_groq_model(), "temperature": 0.1},
+        kwargs={"model": get_default_groq_model(), "temperature": 0.1, "max_tokens": 800},
     )
     """Tier 2: Workhorse - standard reasoning agent"""
 
     LARGE = LLMTierConfig(
         provider="groq",
-        kwargs={"model": os.getenv("GROQ_MODEL_LARGE", get_default_groq_model()), "temperature": 0.1},
+        kwargs={"model": os.getenv("GROQ_MODEL_LARGE", get_default_groq_model()), "temperature": 0.1, "max_tokens": 800},
     )
     """Tier 3: Complex reasoning agent"""
 

@@ -24,7 +24,7 @@ Designed for enterprise engineering teams to streamline weekly report drafting, 
   - Blocker logs with high-impact key issue flags.
   - Version comparison viewer with reviewer comment history.
 - **Floating AI Assistant Modal**:
-  - Direct integration with the backend LangGraph + CrewAI agent.
+  - Direct integration with the backend LangGraph + LangChain Lightweight RAG assistant.
   - Session-scoped chat memory (preserved across minimize/close, automatically reset on browser refresh).
   - Rich markdown formatting for tables, code snippets, and structured deliverable summaries.
 - **Status Badges & Toasts**:

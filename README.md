@@ -4,14 +4,14 @@
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB%207.0-47A248.svg?style=flat&logo=mongodb)](https://www.mongodb.com)
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript-61DAFB.svg?style=flat&logo=react)](https://react.dev)
 [![Zustand](https://img.shields.io/badge/State-Zustand%205-brown.svg?style=flat)](https://github.com/pmndrs/zustand)
-[![CrewAI](https://img.shields.io/badge/Agents-CrewAI-FF6B6B.svg?style=flat)](https://crewai.com)
+[![LangChain](https://img.shields.io/badge/RAG-LangChain-1C3C3C.svg?style=flat)](https://www.langchain.com/)
 [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-24292e.svg?style=flat)](https://langchain-ai.github.io/langgraph/)
 [![Groq](https://img.shields.io/badge/LLM-Groq%20Inference-F05032.svg?style=flat)](https://groq.com)
 [![Docker](https://img.shields.io/badge/Deployment-Docker%20Compose-2496ED.svg?style=flat&logo=docker)](https://www.docker.com)
 
 An enterprise-grade, asynchronous Weekly Report Generator and Team Dashboard application built with **FastAPI**, **MongoDB**, **React 19**, **Zustand 5**, and **Tailwind CSS v4**.
 
-Equipped with a multi-agent AI Intelligence layer powered by **CrewAI**, **LangGraph**, and **Groq LLM** to provide deep, real-time insights into team deliverables, blocker patterns, and compliance trends.
+Equipped with an AI Intelligence layer powered by **LangGraph**, **LangChain**, and **Groq LLM** to provide deep, real-time insights into team deliverables, blocker patterns, and compliance trends.
 
 ---
 
@@ -19,7 +19,7 @@ Equipped with a multi-agent AI Intelligence layer powered by **CrewAI**, **LangG
 
 | Document | Description |
 | :--- | :--- |
-| 👉 **[Backend Architecture Documentation](BACKEND_ARCHITECTURE.md)** | Deep dive into the 3-tier architecture, RBAC model, LangGraph/CrewAI agent flow, LiteLLM compatibility patches, and database indexing. |
+| 👉 **[Backend Architecture Documentation](BACKEND_ARCHITECTURE.md)** | Deep dive into the 3-tier architecture, RBAC model, LangGraph + LangChain RAG pipeline, and database indexing. |
 | 👉 **[Frontend Architecture Documentation](FRONTEND_ARCHITECTURE.md)** | Detailed breakdown of Zustand stores, smart caching, component hierarchy, props contracts, and real calendar standardization. |
 | 👉 **[Backend README & API Guide](backend/README.md)** | Python virtual environment setup, local execution, endpoints catalog, and configuration. |
 | 👉 **[Frontend README & Setup Guide](frontend/README.md)** | React/Vite installation, scripts, component layout, and role simulator. |
@@ -41,8 +41,8 @@ Equipped with a multi-agent AI Intelligence layer powered by **CrewAI**, **LangG
    - Replaced fragile manual date ranges with real Monday-to-Sunday calendar weeks (`Week 36 (Aug 31 - Sep 06, 2026)`).
 4. **Smart Client-Side Caching**:
    - Zustand stores cache stable entities (projects, users, audit feed) to eliminate redundant API network roundtrips when navigating between pages.
-5. **Agentic AI Assistant**:
-   - **CrewAI Chat Crew**: Autonomous agent equipped with 5 specialized tools (`FetchWeeklyReportsTool`, `FetchContributorReportTool`, `FetchTeamKpiMetricsTool`, `FetchTeamBlockersTool`, `FetchProjectsListTool`) to iteratively gather ground-truth facts.
+5. **Intelligent AI Assistant & Lightweight RAG**:
+   - **Lightweight LangChain RAG Engine**: Asynchronously queries MongoDB for grounded weekly reports, KPI compliance rates, individual deliverables, and critical blockers without heavy thread overhead.
    - **LangGraph StateGraph**: Orchestrates the QnA node and automatically triggers a 5-response rolling summarizer to maintain ongoing context.
    - **Session Chat Memory**: In-memory `MemorySaver` preserves dialogue while minimized/closed, and clears on browser refresh without database pollution.
 6. **Live KPI Analytics & Visualization**:
@@ -261,20 +261,18 @@ The system is pre-populated with realistic engineering team accounts. You can lo
 
 ---
 
-## 🤖 AI Assistant & Agentic Tools
+## 🤖 AI Assistant & Lightweight RAG
 
 The AI assistant can be accessed by clicking the **"AI Assistant"** button in the top navigation bar. It is powered by:
 
-1. **CrewAI Chat Crew (`ReportQnACrew`)**:
-   - `FetchWeeklyReportsTool`: Searches team reports by week, project, status, or keyword.
-   - `FetchContributorReportTool`: Fetches detailed updates for a specific team member.
-   - `FetchTeamKpiMetricsTool`: Computes live compliance percentages and blocker metrics.
-   - `FetchTeamBlockersTool`: Identifies unresolved issues and critical blockers.
-   - `FetchProjectsListTool`: Lists active project codes and categories.
-2. **LangGraph StateGraph (`chat_graph`)**:
-   - Routes user queries to the CrewAI QnA node.
-   - Evaluates a conditional edge: every 5 responses, invokes the **Rolling Summarizer** to condense dialogue into an ongoing factual summary.
-   - Employs in-memory `MemorySaver` so conversation is maintained during navigation/minimize, but resets cleanly upon page refresh.
+1. **Lightweight LangChain RAG Engine (`rag.py`)**:
+   - Asynchronously queries MongoDB collections (`report_repository` and `report_service`) for weekly submissions, KPI metrics, contributor deliverables, and open blockers.
+   - Bypasses heavy multi-agent thread pools, achieving instantaneous response times directly in FastAPI's async event loop.
+   - Formats clean structured context with critical blocker highlights and feeds into LangChain `ChatGroq`.
+2. **LangGraph StateGraph (`graph.py`)**:
+   - Evaluates user inquiries through the `qna_node` and coordinates the conversational state.
+   - Evaluates a conditional edge: every 5 responses, invokes the **Rolling Summarizer** (`summarize_node`) to condense dialogue into an ongoing factual summary.
+   - Employs in-memory `MemorySaver` so conversation is maintained during navigation/minimize, but resets cleanly upon page refresh without permanent database pollution.
 
 ---
 
@@ -286,12 +284,12 @@ Weekly-Report-Generator-Team-Dashboard/
 │   ├── app/
 │   │   ├── clients/database/   # Motor async MongoDB client & auto-seeder
 │   │   ├── data/               # Seed dataset (users, projects, reports, activities)
-│   │   ├── llm/                # LLM Provider Factory, Groq client & LiteLLM patches
+│   │   ├── llm/                # LLM Provider Factory & ChatGroq provider
 │   │   ├── middleware/         # JWT authentication & RBAC dependency guards
 │   │   ├── models/             # Pydantic v2 schemas
 │   │   ├── repositories/       # Async MongoDB queries, filtering, pagination
 │   │   ├── routes/             # REST controllers (users, reports, chat)
-│   │   └── services/           # Business logic, KPI engine, LangGraph & CrewAI
+│   │   └── services/           # Business logic, KPI engine, LangGraph & LangChain RAG
 │   ├── tests/                  # Automated test suites
 │   ├── Dockerfile
 │   ├── main.py                 # FastAPI application & lifespan
