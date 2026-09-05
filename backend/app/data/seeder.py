@@ -1,9 +1,14 @@
-import os
-import logging
-from typing import Optional
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from dotenv import load_dotenv
+"""Database Seeder Module.
 
+Idempotently seeds initial users, projects, reports, and activities into MongoDB.
+Uses unique indexes and $setOnInsert upserts to prevent duplicate records
+across multiple deployments or concurrent serverless cold starts.
+"""
+
+import os
+import asyncio
+import logging
+from app.clients.database.mongo_client import get_database
 from app.data.mock_data import (
     INITIAL_USERS,
     INITIAL_PROJECTS,
@@ -12,18 +17,7 @@ from app.data.mock_data import (
     DEFAULT_HASHED_PASSWORD,
 )
 
-load_dotenv()
-
 logger = logging.getLogger("uvicorn.error")
-
-MONGO_URL = os.getenv(
-    "MONGO_URL",
-    "mongodb://admin:password123@mongodb:27017/team_dashboard?authSource=admin",
-)
-DATABASE_NAME = os.getenv("DATABASE_NAME", "team_dashboard")
-
-client: Optional[AsyncIOMotorClient] = None
-db: Optional[AsyncIOMotorDatabase] = None
 
 
 async def ensure_indexes():
@@ -36,44 +30,9 @@ async def ensure_indexes():
         await database["projects"].create_index("code", unique=True)
         await database["reports"].create_index("id", unique=True)
         await database["activities"].create_index("id", unique=True)
-        logger.info("MongoDB unique indexes successfully verified.")
+        logger.info("MongoDB unique indexes verified.")
     except Exception as e:
         logger.warning(f"Note on MongoDB index verification: {e}")
-
-
-async def connect_to_mongo():
-    global client, db
-    logger.info(f"Connecting to MongoDB at: {MONGO_URL.split('@')[-1] if '@' in MONGO_URL else MONGO_URL}")
-    try:
-        client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=5000)
-        db = client[DATABASE_NAME]
-        # Ping the server to verify connectivity
-        await client.admin.command("ping")
-        logger.info(f"Successfully connected to MongoDB database: {DATABASE_NAME}")
-        await ensure_indexes()
-        await seed_database_if_empty()
-    except Exception as e:
-        logger.error(f"Failed to connect to MongoDB: {e}")
-
-
-async def close_mongo_connection():
-    global client
-    if client:
-        client.close()
-        logger.info("Closed MongoDB connection.")
-
-
-def get_database() -> AsyncIOMotorDatabase:
-    global db
-    if db is None:
-        client_fallback = AsyncIOMotorClient(MONGO_URL)
-        return client_fallback[DATABASE_NAME]
-    return db
-
-
-def get_collection(name: str):
-    database = get_database()
-    return database[name]
 
 
 async def seed_database_if_empty():
@@ -87,6 +46,9 @@ async def seed_database_if_empty():
     if not auto_seed:
         logger.info("AUTO_SEED is set to false. Skipping database seeding.")
         return
+
+    # Ensure unique indexes are established before seeding
+    await ensure_indexes()
 
     database = get_database()
 
@@ -102,6 +64,7 @@ async def seed_database_if_empty():
                 upsert=True,
             )
     else:
+        # Ensure password exists on any existing accounts
         await users_coll.update_many(
             {"hashedPassword": {"$exists": False}},
             {"$set": {"hashedPassword": DEFAULT_HASHED_PASSWORD}},
@@ -144,3 +107,16 @@ async def seed_database_if_empty():
             )
 
     logger.info("MongoDB collections check and idempotent seeding completed.")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    from app.clients.database.mongo_client import connect_to_mongo, close_mongo_connection
+
+    async def main():
+        await connect_to_mongo()
+        await seed_database_if_empty()
+        await close_mongo_connection()
+
+    asyncio.run(main())
+

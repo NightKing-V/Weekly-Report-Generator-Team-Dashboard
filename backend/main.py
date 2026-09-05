@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.clients.database.mongo_client import connect_to_mongo, close_mongo_connection
+from app.data.seeder import seed_database_if_empty
 from app.routes.user_routes import router as user_router
 from app.routes.report_routes import router as report_router
 from app.routes.chat_routes import router as chat_router
@@ -14,8 +15,9 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to MongoDB and seed dataset if empty
+    # Startup: Connect to MongoDB and idempotently seed dataset if empty
     await connect_to_mongo()
+    await seed_database_if_empty()
     yield
     # Shutdown: Close database connections
     await close_mongo_connection()

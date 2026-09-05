@@ -1,7 +1,7 @@
 import logging
 from app.llm.LLMFactory import LLMFactory
 from app.llm.tiers import LLMTier
-from app.llm.clients.groq_client import GroqClient
+from app.clients.llm.groq_client import GroqClient
 
 logger = logging.getLogger("app.llm")
 
