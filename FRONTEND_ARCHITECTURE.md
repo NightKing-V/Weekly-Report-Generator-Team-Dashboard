@@ -173,11 +173,17 @@ Manual date range text inputs have been completely removed from the report submi
 
 ---
 
-## 5. AI Assistant Modal & Session Memory (`AiAssistantModal.tsx`)
+## 5. AI Assistant Modal & Rich Formatting (`AiAssistantModal.tsx` & `FormattedChatMessage.tsx`)
 
 - **Session-Only Memory**: Initializes a unique session `threadId` via `crypto.randomUUID()` when the application opens.
 - **Lifecycle Persistence**: Chat state is maintained in React state while the modal is minimized or closed. When the user performs a full browser page refresh, the session resets cleanly without leaving stale data in the database.
-- **Rich Markdown Formatting**: Supports structured markdown rendering, tables, bullet points, and code snippets returned by the backend LangGraph + LangChain RAG engine.
+- **Rich Formatting & Callout Detection (`FormattedChatMessage.tsx`)**:
+  - **GFM Markdown Engine**: Uses `react-markdown` and `remark-gfm` for tables, strikethrough, nested bullet lists, and links.
+  - **Critical Issue & Blocker Detection**: Pre-processes and renders `⚠️ [CRITICAL KEY ISSUE]` as an animated rose warning badge with `AlertTriangle`.
+  - **Workflow Status Badges**: Automatically detects and renders `Approved` (emerald), `Needs Correction` (amber), `Submitted` (blue), and `Draft` (slate) workflow pills.
+  - **Syntax-Styled Code Blocks**: Fenced code blocks (` ```lang `) display the language identifier and an interactive "Copy Code" button with transient feedback.
+  - **Responsive Tables**: Formatted with zebra stripes, sticky headers, and horizontal scroll wrappers.
+  - **One-Click Message Copy**: Both individual assistant responses and rolling summaries include quick copy-to-clipboard buttons for seamless sharing in Slack, Jira, or email.
 - **Context Injection**: Automatically attaches the currently viewed `weekLabel` to user queries, providing the AI assistant with temporal context.
 
 ---

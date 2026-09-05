@@ -26,7 +26,7 @@ Designed for enterprise engineering teams to streamline weekly report drafting, 
 - **Floating AI Assistant Modal**:
   - Direct integration with the backend LangGraph + LangChain Lightweight RAG assistant.
   - Session-scoped chat memory (preserved across minimize/close, automatically reset on browser refresh).
-  - Rich markdown formatting for tables, code snippets, and structured deliverable summaries.
+  - Rich formatting detection via `FormattedChatMessage`: full GFM markdown, responsive tables, critical blocker detection (`⚠️ [CRITICAL KEY ISSUE]`), workflow status pills (`Approved`, `Needs Correction`, `Submitted`, `Draft`), syntax-highlighted code blocks with 1-click copy, and rolling summary preview.
 - **Status Badges & Toasts**:
   - Global snackbar notifications with HTTP status code badges (`[HTTP 400]`, `[HTTP 401]`, `[HTTP 500]`).
 
