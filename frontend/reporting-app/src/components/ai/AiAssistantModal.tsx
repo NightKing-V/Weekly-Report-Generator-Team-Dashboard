@@ -165,14 +165,6 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
               <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 shrink-0">
                 Online
               </span>
-              {responseCount > 0 && (
-                <span
-                  className="text-[9px] font-medium px-1.5 py-0.2 rounded-full bg-white/15 text-indigo-100 border border-white/20 shrink-0"
-                  title="Total responses in this in-memory session. Summarizer triggers every 5 responses."
-                >
-                  Turn {responseCount}
-                </span>
-              )}
             </div>
             <p className="text-[10px] text-indigo-200 truncate max-w-[210px]">
               Analyzing reports for {selectedWeek}
@@ -207,33 +199,6 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
           </button>
         </div>
       </div>
-
-      {/* Rolling Summary Card (every 5 responses) */}
-      {rollingSummary && (
-        <div className="px-3 pt-2.5 pb-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/70 border-b border-indigo-150/80 shrink-0">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-indigo-900 mb-1">
-            <span className="flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-              Rolling Summary (5-Turn Checkpoint)
-            </span>
-            <div className="flex items-center gap-2">
-              <MessageCopyButton text={rollingSummary} />
-              <button
-                type="button"
-                onClick={() => setShowSummaryDetails((prev) => !prev)}
-                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer underline"
-              >
-                {showSummaryDetails ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </div>
-          {showSummaryDetails && (
-            <div className="mt-1.5 p-2.5 bg-white/85 rounded-xl border border-indigo-100 shadow-2xs max-h-36 overflow-y-auto">
-              <FormattedChatMessage content={rollingSummary} />
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Suggested Prompt Chips */}
       <div className="px-3 py-2 bg-slate-50/90 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto shrink-0 scrollbar-thin">
@@ -306,7 +271,7 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
             </div>
             <div className="p-3 bg-white rounded-2xl text-xs text-slate-500 italic border border-slate-200/80 shadow-xs">
-              Querying team intelligence via LangGraph & Groq...
+              Thinking...
             </div>
           </div>
         )}
