@@ -67,7 +67,7 @@ export function useFetch() {
         } else if (code === 500) {
           userMessage = `[500 Server Error] ${message}`;
         } else if (code === 0) {
-          userMessage = `[Network Error] Unable to connect to server at localhost:8000.`;
+          userMessage = `[Network Error] Unable to connect to server.`;
         }
 
         const resolvedError = err instanceof Error ? err : new Error(message);
