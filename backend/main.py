@@ -15,6 +15,7 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: Connect to MongoDB and seed dataset if empty
     # Startup: Connect to MongoDB and idempotently seed dataset if empty
     await connect_to_mongo()
     await seed_database_if_empty()

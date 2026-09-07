@@ -74,8 +74,8 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
 
   // Load static catalogs (users, projects) on mount
   useEffect(() => {
-    fetchUsers();
-    fetchProjects();
+    fetchUsers(true);
+    fetchProjects(true);
   }, [fetchUsers, fetchProjects]);
 
   // Load week-specific metrics, charts data, and activities

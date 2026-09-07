@@ -61,7 +61,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
 
   fetchUsers: async (force = false) => {
-    if (!force && get().users.length > 0) {
+    if (!force && get().users.length > 1) {
       return get().users;
     }
     set({ loading: true });

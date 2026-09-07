@@ -5,6 +5,7 @@
 The **Weekly Report Generator & Team Dashboard** backend is engineered as a high-performance, asynchronous REST API powered by **FastAPI**, **MongoDB (Motor)**, **Pydantic v2**, and a lightweight AI intelligence layer orchestrating **LangGraph**, **LangChain**, and **ChatGroq**.
 
 The system adheres strictly to a **Three-Tier Layered Architecture**:
+
 1. **API / Route Layer (`app/routes/`)**: Handles HTTP requests, enforces JWT authentication, validates payload schemas, and delegates immediately to the domain service layer.
 2. **Domain Service Layer (`app/services/`)**: Encapsulates business logic, state transitions, KPI aggregations, manager approval workflows, audit event generation, and AI agent orchestration.
 3. **Persistence Repository Layer (`app/repositories/`)**: Manages asynchronous database queries against MongoDB, dynamic filter building, pagination slicing, and atomic document updates.
@@ -116,6 +117,7 @@ backend/
 The API enforces strict RBAC rules at the route layer using FastAPI dependency injection.
 
 ### 3.1 User Roles
+
 - **`team_member` (Contributor)**:
   - Can create and update their own draft reports.
   - Can submit reports for review.
@@ -133,13 +135,15 @@ The API enforces strict RBAC rules at the route layer using FastAPI dependency i
 
 ### 3.2 Security Middleware & Helpers (`app/middleware/auth.py`)
 
-| Dependency / Guard | Description | Failure Response |
-| :--- | :--- | :--- |
-| `require_authenticated` | Verifies JWT Bearer token and retrieves active user profile | `401 Unauthorized` |
-| `require_manager_or_admin` | Requires user role to be `manager` or `admin` | `403 Forbidden` |
-| `require_admin` | Requires user role to be strictly `admin` | `403 Forbidden` |
+
+| Dependency / Guard         | Description                                                 | Failure Response   |
+| :--------------------------- | :------------------------------------------------------------ | :------------------- |
+| `require_authenticated`    | Verifies JWT Bearer token and retrieves active user profile | `401 Unauthorized` |
+| `require_manager_or_admin` | Requires user role to be`manager` or `admin`                | `403 Forbidden`    |
+| `require_admin`            | Requires user role to be strictly`admin`                    | `403 Forbidden`    |
 
 ### 3.3 Authentication Workflow
+
 1. User posts credentials to `POST /api/users/login`.
 2. Password hash verified using **Bcrypt** with salt rounds.
 3. Returns signed **JWT** containing user ID, email, role, and expiration (`ACCESS_TOKEN_EXPIRE_MINUTES`).
@@ -152,6 +156,7 @@ The API enforces strict RBAC rules at the route layer using FastAPI dependency i
 Business logic is isolated from HTTP handling inside `app/services/`:
 
 ### 4.1 Report Service (`app/services/reports/report_service.py`)
+
 - **Draft Preservation**: `save_draft` updates the working copy without triggering reviews or locking fields.
 - **Submission & Snapshotting**: `submit_report` transitions status to `"Submitted"`, stamps `submittedAt`, and appends an immutable snapshot to the `versions` array.
 - **Manager Review Action Machine**:
@@ -163,6 +168,7 @@ Business logic is isolated from HTTP handling inside `app/services/`:
 - **Audit Logging**: Emits structured activity events to `activities` collection on every lifecycle transition.
 
 ### 4.2 Chat Service & Agent Orchestration (`app/services/chat/`)
+
 - **Session-Only Memory**: Maintains dialogue context in-memory using LangGraph's `MemorySaver`. When the client refreshes, the thread ID changes, providing a fresh session without persisting chat logs to the database.
 - **Two-Node Graph Workflow**:
   1. `qna_node`: Executes the **Lightweight LangChain RAG Engine** (`rag.py`), using direct async MongoDB queries to retrieve weekly submissions, KPI metrics, and blockers.
@@ -248,6 +254,7 @@ Unlike multi-agent frameworks that introduce thread-pool bottlenecks and synchro
 ### 5.4 Deterministic RAG Fallback Mechanism
 
 To guarantee high availability and prevent crashes:
+
 - If `GROQ_API_KEY` is not configured, or if Groq API encounters a temporary rate limit (`429`), the engine catches the exception gracefully.
 - Generates a clean, factual markdown summary constructed directly from the retrieved MongoDB context.
 - Maintains dialogue continuity without interrupting the user experience or breaking the 5-turn summarizer state machine.
@@ -257,6 +264,7 @@ To guarantee high availability and prevent crashes:
 ## 6. Database Schema & MongoDB Design
 
 The system employs a **Hybrid Document Pattern**:
+
 - High-frequency read queries (e.g., author name, project name) are denormalized inside `weekly_reports` to eliminate costly `$lookup` stages.
 - Tasks, deliverables, blockers, hours, and audit snapshots are embedded directly inside the parent report document for atomic writes.
 
@@ -340,7 +348,9 @@ erDiagram
 ## 7. Pagination, Filtering & Calendar Standardization
 
 ### 7.1 Calendar Standardization (Monday to Sunday)
+
 All weekly reports follow the strict Monday-to-Sunday ISO calendar convention:
+
 - **Week Start**: Monday 00:00:00 (`weekStartDate`, e.g., `2026-08-31`)
 - **Week End**: Sunday 23:59:59 (`weekEndDate`, e.g., `2026-09-06`)
 - **Week Label**: Standardized label format: `Week 36 (Aug 31 - Sep 06, 2026)`
@@ -348,9 +358,11 @@ All weekly reports follow the strict Monday-to-Sunday ISO calendar convention:
 ### 7.2 Pagination & Query Filters (`GET /api/reports`)
 
 Endpoints support composable query parameters:
+
 ```
 GET /api/reports?week_label=Week%2036...&project_id=p-cap&status=Submitted&search=redux&page=1&limit=10
 ```
+
 - `page`: 1-based page number (defaults to `1`).
 - `limit`: Records per page (defaults to `10`, capped at `100`).
 - `week_label`: Filters submissions to a specific reporting period.

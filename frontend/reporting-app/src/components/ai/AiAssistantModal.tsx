@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useReports } from '../../context/ReportContext';
 import { apiClient } from '../../services/api';
-import { Sparkles, Send, Bot, User as UserIcon, RefreshCw, X, Minus, RotateCcw, Layers, Copy, Check } from 'lucide-react';
+import { Sparkles, Send, Bot, User as UserIcon, RefreshCw, X, Minus, RotateCcw, Copy, Check } from 'lucide-react';
 import { FormattedChatMessage } from './FormattedChatMessage';
 import type { AiAssistantPanelProps } from '../../props';
 
@@ -58,16 +58,13 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
     {
       id: 'welcome-msg',
       sender: 'assistant',
-      text: `Hello! I'm your AI Team Assistant connected to the backend reporting API via LangGraph. Ask me to generate an executive summary for **${selectedWeek}**, identify unresolved blockers, or check progress across team members.`,
+      text: `Hello! I'm your AI Team Assistant. Ask me to generate an executive summary for **${selectedWeek}**, identify unresolved blockers, or check progress across team members.`,
       timestamp: new Date().toISOString(),
     },
   ]);
 
   const [inputQuery, setInputQuery] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const [rollingSummary, setRollingSummary] = useState<string | null>(null);
-  const [responseCount, setResponseCount] = useState<number>(0);
-  const [showSummaryDetails, setShowSummaryDetails] = useState(true);
 
   // Auto-scroll to bottom of chat history on new messages or thinking state
   useEffect(() => {
@@ -85,8 +82,6 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
 
   const handleResetChat = () => {
     threadIdRef.current = crypto.randomUUID();
-    setRollingSummary(null);
-    setResponseCount(0);
     setMessages([
       {
         id: `welcome-${crypto.randomUUID()}`,
@@ -114,12 +109,6 @@ export const AiAssistantModal: React.FC<AiAssistantPanelProps> = ({ isOpen, onCl
 
     try {
       const response = await apiClient.chat.ask(text.trim(), selectedWeek, threadIdRef.current);
-      if (response.summary) {
-        setRollingSummary(response.summary);
-      }
-      if (response.responseCount !== undefined) {
-        setResponseCount(response.responseCount);
-      }
 
       const botMessage: ChatMessage = {
         id: `msg-${crypto.randomUUID()}`,
