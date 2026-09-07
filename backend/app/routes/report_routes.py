@@ -111,7 +111,9 @@ async def submit_report(
     return await report_service.submit_report(payload, current_user)
 
 
+@router.post("/reports/{report_id}/approve", response_model=WeeklyReportModel)
 @router.post("/reports/{report_id}/review", response_model=WeeklyReportModel)
+
 async def approve_report(
     report_id: str,
     payload: ReportReviewActionRequest,

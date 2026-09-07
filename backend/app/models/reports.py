@@ -1,5 +1,6 @@
-from typing import Optional, List, Literal, Dict, Any
-from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Literal, Dict, Any, Union
+from pydantic import BaseModel, Field, field_validator, model_validator
+
 
 TaskPriority = Literal["Low", "Medium", "High", "Urgent"]
 TaskStatus = Literal["Completed", "In Progress", "Delayed", "Blocked"]
@@ -149,11 +150,40 @@ class ReportSubmitRequest(BaseModel):
     notesOrLinks: Optional[str] = None
 
 
+class ReviewerInfo(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    role: Optional[str] = "manager"
+
+
 class ReportReviewActionRequest(BaseModel):
-    authorId: str
-    authorName: str
-    authorRole: str = "manager"
+    authorId: Optional[str] = None
+    authorName: Optional[str] = None
+    authorRole: Optional[str] = "manager"
+    reviewer: Optional[Union[ReviewerInfo, Dict[str, Any]]] = None
     comment: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_author_from_reviewer(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            reviewer = data.get("reviewer")
+            if isinstance(reviewer, dict):
+                if not data.get("authorId") and reviewer.get("id"):
+                    data["authorId"] = str(reviewer["id"])
+                if not data.get("authorName") and reviewer.get("name"):
+                    data["authorName"] = str(reviewer["name"])
+                if not data.get("authorRole") and reviewer.get("role"):
+                    data["authorRole"] = str(reviewer["role"])
+            elif hasattr(reviewer, "id"):
+                if not data.get("authorId") and getattr(reviewer, "id", None):
+                    data["authorId"] = str(reviewer.id)
+                if not data.get("authorName") and getattr(reviewer, "name", None):
+                    data["authorName"] = str(reviewer.name)
+                if not data.get("authorRole") and getattr(reviewer, "role", None):
+                    data["authorRole"] = str(reviewer.role)
+        return data
+
 
 
 class ProjectModel(BaseModel):

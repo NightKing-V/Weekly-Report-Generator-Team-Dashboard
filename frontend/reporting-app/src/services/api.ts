@@ -181,12 +181,24 @@ export const apiClient = {
     approve: (id: string, reviewer: { id: string; name: string; role: string }, comment?: string) =>
       request<WeeklyReport>(`/api/reports/${id}/approve`, {
         method: 'POST',
-        body: JSON.stringify({ reviewer, comment: comment || 'Report reviewed and approved.' }),
+        body: JSON.stringify({
+          reviewer,
+          authorId: reviewer.id,
+          authorName: reviewer.name,
+          authorRole: reviewer.role,
+          comment: comment || 'Report reviewed and approved.',
+        }),
       }),
     requestChanges: (id: string, reviewer: { id: string; name: string; role: string }, comment: string) =>
       request<WeeklyReport>(`/api/reports/${id}/request-changes`, {
         method: 'POST',
-        body: JSON.stringify({ reviewer, comment }),
+        body: JSON.stringify({
+          reviewer,
+          authorId: reviewer.id,
+          authorName: reviewer.name,
+          authorRole: reviewer.role,
+          comment,
+        }),
       }),
     getMetrics: (week?: string) => {
       const qs = week ? `?week=${encodeURIComponent(week)}` : '';
