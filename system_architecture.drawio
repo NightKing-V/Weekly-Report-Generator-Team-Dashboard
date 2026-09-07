@@ -1,0 +1,52 @@
+<mxfile host="65bd71144e">
+    <diagram id="high-level-system-architecture" name="High-Level System Architecture">
+        <mxGraphModel dx="730" dy="572" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="740" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Weekly Report Generator &amp;amp; Team Dashboard — System Architecture (High-Level)" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#cbd5e1;strokeWidth=1.5;fillColor=#ffffff;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#0f172a;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="25" width="900" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="comp_frontend" value="&lt;b style=&quot;font-size: 14px; color: #1d4ed8;&quot;&gt;Frontend Client Application&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #334155;&quot;&gt;React 19 • TypeScript • Vite • Zustand Stores • Tailwind CSS&lt;/span&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #64748b;&quot;&gt;Contributor Dashboard, Weekly Report Editor, Manager Review Hub, AI Chat Drawer&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.8;align=center;verticalAlign=middle;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="95" width="520" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="comp_backend" value="&lt;b style=&quot;font-size: 14px; color: #7c3aed;&quot;&gt;FastAPI Backend &amp;amp; API Gateway&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #334155;&quot;&gt;Asynchronous ASGI Server • CORS • Pydantic v2 Request Validation&lt;/span&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #64748b;&quot;&gt;JWT Bearer Authentication &amp;amp; Role-Based Access Control (Contributor / Manager / Admin)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8b5cf6;strokeWidth=1.8;align=center;verticalAlign=middle;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="235" width="520" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="comp_services" value="&lt;b style=&quot;font-size: 14px; color: rgb(67, 56, 202);&quot;&gt;Domain Business Services&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: rgb(51, 65, 85);&quot;&gt;Core Application Logic &amp;amp; Workflow&amp;nbsp;&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 11px; color: rgb(100, 116, 139);&quot;&gt;• Weekly Report Lifecycle (Drafts, Approvals &amp;amp; Version Snapshots)&lt;br&gt;• Live Compliance Rates &amp;amp; KPI Analytics Engine&lt;br&gt;• User Directory &amp;amp; Account Security&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6366f1;strokeWidth=1.8;align=center;verticalAlign=middle;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="375" width="410" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="comp_ai_agent" value="&lt;b style=&quot;font-size: 14px; color: #b45309;&quot;&gt;AI Intelligence Assistant&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #334155;&quot;&gt;LangGraph Workflow &amp;amp; Lightweight RAG Engine&lt;/span&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #64748b;&quot;&gt;• Stateful Multi-Turn Dialogue (Session MemorySaver)&lt;br/&gt;• Direct Async MongoDB Context Retrieval (Tasks &amp;amp; Blockers)&lt;br/&gt;• 5-Turn Rolling Dialogue Compression Summarizer&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f59e0b;strokeWidth=1.8;align=center;verticalAlign=middle;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="590" y="375" width="410" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="comp_mongodb" value="&lt;b style=&quot;font-size: 14px; color: #0f766e;&quot;&gt;MongoDB Database (Motor Async Driver)&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #334155;&quot;&gt;Primary Document Storage &amp;amp; Aggregation Engine&lt;/span&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #64748b;&quot;&gt;• &lt;b&gt;weekly_reports&lt;/b&gt;: Tasks, Blockers, Review History, Versions&lt;br/&gt;• &lt;b&gt;users&lt;/b&gt;: Accounts &amp;amp; Roles • &lt;b&gt;projects&lt;/b&gt;: Codes &amp;amp; Teams • &lt;b&gt;activities&lt;/b&gt;: Audit Trail&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#10b981;strokeWidth=1.8;align=center;verticalAlign=middle;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="535" width="530" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="comp_groq" value="&lt;b style=&quot;font-size: 14px; color: #c2410c;&quot;&gt;Groq Cloud LLM API&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #334155;&quot;&gt;External AI Inference Provider&lt;/span&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 11px; color: #64748b;&quot;&gt;• ChatGroq (Qwen 2.5-32B / Llama 3.3-70B)&lt;br/&gt;• Ultra-Fast LPU Hardware Execution&lt;br/&gt;• Tier 1 Dialogue Summarization Model&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ea580c;strokeWidth=1.8;align=center;verticalAlign=middle;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="690" y="535" width="310" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="banner_principles" value="&lt;b style=&quot;color: #0f172a;&quot;&gt;Key Architectural Principles:&lt;/b&gt;&amp;nbsp;&amp;nbsp;Strict 3-Tier Layer Separation&amp;nbsp;&amp;nbsp;•&amp;nbsp;&amp;nbsp;Pure Non-Blocking Async I/O (FastAPI + Motor)&amp;nbsp;&amp;nbsp;•&amp;nbsp;&amp;nbsp;Zero DB Chat Storage (Session-Only Privacy)&amp;nbsp;&amp;nbsp;•&amp;nbsp;&amp;nbsp;Immutable Version Snapshots" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#cbd5e1;strokeWidth=1.2;fillColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontColor=#334155;shadow=0;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="670" width="980" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn_front_gw" value="HTTPS / REST API (JSON Payloads + Bearer JWT)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3b82f6;strokeWidth=2;fontSize=11;fontColor=#1d4ed8;fontStyle=1;labelBackgroundColor=#ffffff;labelBorderColor=#cbd5e1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="comp_frontend" target="comp_backend" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn_gw_services" value="Report &amp;amp; User Operations" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366f1;strokeWidth=1.8;fontSize=10;fontColor=#4338ca;fontStyle=1;labelBackgroundColor=#ffffff;labelBorderColor=#cbd5e1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="comp_backend" target="comp_services" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn_gw_ai" value="Chat Inquiries &amp;amp; Feed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#f59e0b;strokeWidth=1.8;fontSize=10;fontColor=#b45309;fontStyle=1;labelBackgroundColor=#ffffff;labelBorderColor=#cbd5e1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="comp_backend" target="comp_ai_agent" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn_services_mongo" value="Async CRUD &amp;amp; Aggregations" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10b981;strokeWidth=1.8;fontSize=10;fontColor=#047857;fontStyle=1;labelBackgroundColor=#ffffff;labelBorderColor=#cbd5e1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.38;entryY=0;entryDx=0;entryDy=0;" parent="1" source="comp_services" target="comp_mongodb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn_ai_mongo" value="RAG Context Retrieval" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.8;fontSize=10;fontColor=#0f766e;fontStyle=1;labelBackgroundColor=#ffffff;labelBorderColor=#cbd5e1;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.82;entryY=0;entryDx=0;entryDy=0;" parent="1" source="comp_ai_agent" target="comp_mongodb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn_ai_groq" value="LLM Inference &amp;amp; Summary" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ea580c;strokeWidth=1.8;fontSize=10;fontColor=#c2410c;fontStyle=1;labelBackgroundColor=#ffffff;labelBorderColor=#cbd5e1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="comp_ai_agent" target="comp_groq" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

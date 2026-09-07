@@ -24,6 +24,8 @@ Equipped with an AI Intelligence layer powered by **LangGraph**, **LangChain**, 
 | 👉 **[Backend README & API Guide](backend/README.md)** | Python virtual environment setup, local execution, endpoints catalog, and configuration. |
 | 👉 **[Frontend README & Setup Guide](frontend/README.md)** | React/Vite installation, scripts, component layout, and role simulator. |
 | 🗄️ **[Database ER Diagram (Draw.io)](database_er_diagram.drawio)** | Native Draw.io XML file mapping all MongoDB collections, embedded schemas, and relationships. Open with [diagrams.net](https://app.diagrams.net). |
+| 🏛️ **[System Architecture Diagram (Draw.io)](system_architecture.drawio)** | High-level system architecture diagram in Draw.io XML (Light Theme). Open with [diagrams.net](https://app.diagrams.net). |
+| 🧩 **[Backend Structure Diagram (Draw.io)](backend_structure.drawio)** | Comprehensive backend structure diagram mapping Routes, Services, Models, and Repositories (Light Theme). |
 
 ---
 
@@ -62,69 +64,41 @@ erDiagram
     users ||--o{ reports : "submits (userId)"
     projects ||--o{ reports : "categorizes (projectId)"
     users }o--o{ projects : "assignedMemberIds"
-    reports ||--o{ activities : "logs audit (reportId)"
+    reports ||--o{ activities : "logs (reportId)"
 
     users {
-        ObjectId _id PK
-        string id UK "Index (e.g. user-1)"
-        string email UK "Unique Index"
-        string name
+        string id PK "User ID (e.g. user-1)"
+        string name "Full Name"
+        string email "Login Email"
         string role "team_member | manager | admin"
-        string title
-        string department
-        string avatarUrl
-        string hashedPassword
-        string createdAt
+        string title "Job Title"
     }
 
     projects {
-        ObjectId _id PK
-        string id UK "Index (e.g. proj-1)"
-        string code UK "Unique Index (e.g. CLT-A)"
-        string name
-        string description
+        string id PK "Project ID (e.g. proj-1)"
+        string name "Project Name"
+        string code "Project Code (e.g. CLT-A)"
         string status "Active | On Hold | Completed"
-        string color
-        string[] assignedMemberIds "References users.id"
-        string createdAt
+        string[] assignedMemberIds FK "Assigned user IDs"
     }
 
     reports {
-        ObjectId _id PK
-        string id UK "Index (e.g. rep-sarah-w36)"
-        string userId FK "References users.id"
-        string userName "Denormalized"
-        string projectId FK "References projects.id"
-        string projectName "Denormalized"
-        string weekStartDate "YYYY-MM-DD"
-        string weekEndDate "YYYY-MM-DD"
-        string weekLabel "Index (e.g. Week 36)"
-        string status "Draft | Submitted | Needs Correction | Approved"
-        int currentVersion
-        string latestManagerComment
-        string submittedAt
-        string reviewedAt
-        Array tasksCompleted "Embedded [{taskName, plannedPercent, actualPercent, hours, deliverable}]"
-        Array tasksPlannedNextWeek "Embedded [{taskName, estimatedHours, notes}]"
-        Array blockers "Embedded [{description, isKeyIssue, impact}]"
-        Array achievements "Embedded [{description, isKeyAchievement}]"
-        Object hoursWorked "Embedded {development, testing, meetings, documentation, other}"
-        Array versions "Embedded [{versionNumber, submittedAt, content, reviewComment}]"
-        Array reviewHistory "Embedded [{authorId, authorName, comment, action, createdAt}]"
-        string createdAt
-        string updatedAt
+        string id PK "Report ID (e.g. rep-sarah-w36)"
+        string userId FK "Author reference"
+        string projectId FK "Project reference"
+        string weekLabel "Reporting week label"
+        string status "Draft | Submitted | Approved"
+        Array tasksCompleted "Embedded deliverables"
+        Array blockers "Embedded blockers"
+        Object hoursWorked "Embedded hours"
     }
 
     activities {
-        ObjectId _id PK
-        string id UK "Index (e.g. act-1)"
+        string id PK "Activity ID (e.g. act-1)"
+        string reportId FK "Target report reference"
         string type "submitted | approved | correction_requested"
-        string actorName
-        string actorRole
-        string reportId FK "References reports.id"
-        string weekLabel
-        string message
-        string timestamp
+        string actorName "Action performer"
+        string timestamp "ISO 8601 Timestamp"
     }
 ```
 
@@ -313,6 +287,8 @@ Weekly-Report-Generator-Team-Dashboard/
 │   └── README.md               # Dedicated Frontend Setup Guide
 │
 ├── database_er_diagram.drawio  # Visual MongoDB ER Diagram (Draw.io XML)
+├── system_architecture.drawio  # High-Level System Architecture Diagram (Draw.io XML)
+├── backend_structure.drawio    # Detailed Backend Structure Diagram (Draw.io XML)
 ├── BACKEND_ARCHITECTURE.md     # Deep Backend System Design Document
 ├── FRONTEND_ARCHITECTURE.md    # Deep Frontend Architecture Document
 ├── docker-compose.yml          # Container orchestration for all services

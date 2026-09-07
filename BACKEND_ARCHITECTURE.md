@@ -10,6 +10,9 @@ The system adheres strictly to a **Three-Tier Layered Architecture**:
 2. **Domain Service Layer (`app/services/`)**: Encapsulates business logic, state transitions, KPI aggregations, manager approval workflows, audit event generation, and AI agent orchestration.
 3. **Persistence Repository Layer (`app/repositories/`)**: Manages asynchronous database queries against MongoDB, dynamic filter building, pagination slicing, and atomic document updates.
 
+> 📄 **System Architecture Diagram (Draw.io)**: A visual architecture diagram is available at [`system_architecture.drawio`](system_architecture.drawio) in the repository root. Open with [diagrams.net](https://app.diagrams.net) or the VS Code Draw.io extension.
+
+
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   CLIENT LAYER                                         │
@@ -60,6 +63,8 @@ The system adheres strictly to a **Three-Tier Layered Architecture**:
 ---
 
 ## 2. Directory Structure & Module Responsibilities
+
+> 📄 **Visual Backend Structure Diagram (Draw.io)**: A detailed structure diagram mapping Routes, Services, Models, and Repositories across all domains is available at [`backend_structure.drawio`](backend_structure.drawio). Open with [diagrams.net](https://app.diagrams.net) or the VS Code Draw.io extension.
 
 ```
 backend/
@@ -275,69 +280,41 @@ erDiagram
     users ||--o{ reports : "submits (userId)"
     projects ||--o{ reports : "categorizes (projectId)"
     users }o--o{ projects : "assignedMemberIds"
-    reports ||--o{ activities : "logs audit (reportId)"
+    reports ||--o{ activities : "logs (reportId)"
 
     users {
-        ObjectId _id PK
-        string id UK "Index (e.g. user-1)"
-        string email UK "Unique Index"
-        string name
+        string id PK "User ID (e.g. user-1)"
+        string name "Full Name"
+        string email "Login Email"
         string role "team_member | manager | admin"
-        string title
-        string department
-        string avatarUrl
-        string hashedPassword
-        string createdAt
+        string title "Job Title"
     }
 
     projects {
-        ObjectId _id PK
-        string id UK "Index (e.g. proj-1)"
-        string code UK "Unique Index (e.g. CLT-A)"
-        string name
-        string description
+        string id PK "Project ID (e.g. proj-1)"
+        string name "Project Name"
+        string code "Project Code (e.g. CLT-A)"
         string status "Active | On Hold | Completed"
-        string color
-        string[] assignedMemberIds "References users.id"
-        string createdAt
+        string[] assignedMemberIds FK "Assigned user IDs"
     }
 
     reports {
-        ObjectId _id PK
-        string id UK "Index (e.g. rep-sarah-w36)"
-        string userId FK "References users.id"
-        string userName "Denormalized"
-        string projectId FK "References projects.id"
-        string projectName "Denormalized"
-        string weekStartDate "YYYY-MM-DD"
-        string weekEndDate "YYYY-MM-DD"
-        string weekLabel "Index (e.g. Week 36)"
-        string status "Draft | Submitted | Needs Correction | Approved"
-        int currentVersion
-        string latestManagerComment
-        string submittedAt
-        string reviewedAt
-        Array tasksCompleted "Embedded [{taskName, plannedPercent, actualPercent, hours, deliverable}]"
-        Array tasksPlannedNextWeek "Embedded [{taskName, estimatedHours, notes}]"
-        Array blockers "Embedded [{description, isKeyIssue, impact}]"
-        Array achievements "Embedded [{description, isKeyAchievement}]"
-        Object hoursWorked "Embedded {development, testing, meetings, documentation, other}"
-        Array versions "Embedded [{versionNumber, submittedAt, content, reviewComment}]"
-        Array reviewHistory "Embedded [{authorId, authorName, comment, action, createdAt}]"
-        string createdAt
-        string updatedAt
+        string id PK "Report ID (e.g. rep-sarah-w36)"
+        string userId FK "Author reference"
+        string projectId FK "Project reference"
+        string weekLabel "Reporting week label"
+        string status "Draft | Submitted | Approved"
+        Array tasksCompleted "Embedded deliverables"
+        Array blockers "Embedded blockers"
+        Object hoursWorked "Embedded hours"
     }
 
     activities {
-        ObjectId _id PK
-        string id UK "Index (e.g. act-1)"
+        string id PK "Activity ID (e.g. act-1)"
+        string reportId FK "Target report reference"
         string type "submitted | approved | correction_requested"
-        string actorName
-        string actorRole
-        string reportId FK "References reports.id"
-        string weekLabel
-        string message
-        string timestamp
+        string actorName "Action performer"
+        string timestamp "ISO 8601 Timestamp"
     }
 ```
 
